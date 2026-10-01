@@ -34,7 +34,7 @@ class AccountsSeeder extends Seeder
             'active' => true,
             'firstName' => $first,
             'lastName' => $last,
-            'phoneNumber' => '',
+            'phoneNumber' => '50' . substr((string) crc32($id), 0, 7),
             'countryCode' => '+971',
             'wallet_amount' => 0,
             'shippingAddress' => [],

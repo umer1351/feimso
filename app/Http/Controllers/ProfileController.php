@@ -26,9 +26,6 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
-        $id = Auth::id();
-        $exist = VendorUsers::where('user_id', $id)->first();
-        return view('users.profile')->with('id', $id);
+        return view('users.profile')->with('id', Auth::id());
     }
 }

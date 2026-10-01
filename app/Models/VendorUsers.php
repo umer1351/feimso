@@ -11,8 +11,4 @@ class VendorUsers extends User
 {
     protected $table = 'users';
 
-    public function getUuidAttribute(): string
-    {
-        return (string) $this->id;
-    }
 }

@@ -26,6 +26,17 @@
         return m ? m.getAttribute('content') : '';
     }
 
+    // Signing in/out regenerates the Laravel session and its CSRF token; keep the
+    // page's meta tag in sync so the views' follow-up $.ajax calls don't get a 419.
+    function syncCsrf(r) {
+        if (!r || !r.csrf) return;
+        var m = document.querySelector('meta[name="csrf-token"]');
+        if (m) m.setAttribute('content', r.csrf);
+        if (window.jQuery && jQuery.ajaxSettings && jQuery.ajaxSettings.headers && jQuery.ajaxSettings.headers['X-CSRF-TOKEN']) {
+            jQuery.ajaxSettings.headers['X-CSRF-TOKEN'] = r.csrf;
+        }
+    }
+
     // Laravel also accepts its encrypted XSRF-TOKEN cookie, for pages without the meta tag.
     function xsrfCookie() {
         var m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
@@ -421,6 +432,7 @@
         this._listeners.forEach(function (l) { try { l(u); } catch (e) { if (window.console) console.error(e); } });
     };
     Auth.prototype._signedIn = function (r) {
+        syncCsrf(r);
         this.currentUser = r.user ? new User(r.user) : null;
         this._emit();
         return {user: this.currentUser, additionalUserInfo: {isNewUser: !!r.isNewUser}, credential: null};
@@ -440,10 +452,7 @@
     Auth.prototype.signOut = function () {
         var self = this;
         return post('/fs/auth/logout', {}).then(function (r) {
-            // The session (and its CSRF token) was regenerated; keep the page's
-            // token in sync so follow-up $.ajax calls don't get a 419.
-            var m = document.querySelector('meta[name="csrf-token"]');
-            if (m && r && r.csrf) m.setAttribute('content', r.csrf);
+            syncCsrf(r);
             self.currentUser = null;
             self._emit();
         });

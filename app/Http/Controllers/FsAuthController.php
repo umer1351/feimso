@@ -48,7 +48,7 @@ class FsAuthController extends Controller
         RateLimiter::clear($key);
         Auth::login($user, true);
         $request->session()->regenerate();
-        return response()->json(['user' => $this->present($user)]);
+        return response()->json(['user' => $this->present($user), 'csrf' => csrf_token()]);
     }
 
     public function register(Request $request)
@@ -68,7 +68,7 @@ class FsAuthController extends Controller
         $user = User::createAccount(['email' => $email, 'password' => Hash::make($password)]);
         Auth::login($user, true);
         $request->session()->regenerate();
-        return response()->json(['user' => $this->present($user), 'isNewUser' => true]);
+        return response()->json(['user' => $this->present($user), 'isNewUser' => true, 'csrf' => csrf_token()]);
     }
 
     public function logout(Request $request)
@@ -141,7 +141,7 @@ class FsAuthController extends Controller
         }
         Auth::login($user, true);
         $request->session()->regenerate();
-        return response()->json(['user' => $this->present($user), 'isNewUser' => $isNew]);
+        return response()->json(['user' => $this->present($user), 'isNewUser' => $isNew, 'csrf' => csrf_token()]);
     }
 
     private function sendSms(string $phone, string $code): void
