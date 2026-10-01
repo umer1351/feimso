@@ -15,10 +15,7 @@ class HomeController extends Controller
     public function __construct()
     {
         
-        $route = \Route::currentRouteName();
-        if (!isset($_COOKIE['section_id']) && !isset($_COOKIE['address_name']) && $route != "set-location") {
-            \Redirect::to('set-location')->send();
-        }
+        $this->middleware('location')->except('setLocation');
     }
 
     /**
@@ -45,7 +42,8 @@ class HomeController extends Controller
 
     public function setLocation()
     {
-        return view('layer');
+        $template = \App\Helpers\FirestoreHelper::getDocument('settings/homepageTemplate');
+        return view('layer', ['homepageTemplate' => $template['homepageTemplate'] ?? '']);
     }
 
     /**

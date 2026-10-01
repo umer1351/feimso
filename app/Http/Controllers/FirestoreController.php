@@ -29,6 +29,7 @@ class FirestoreController extends Controller
             return response()->json(['message' => 'Invalid batch'], 422);
         }
 
+        $started = microtime(true);
         $results = [];
         foreach ($requests as $r) {
             try {
@@ -44,7 +45,11 @@ class FirestoreController extends Controller
                 $results[] = ['ok' => false, 'code' => 'internal', 'message' => config('app.debug') ? $e->getMessage() : 'Internal error'];
             }
         }
-        return response()->json(['results' => $results]);
+        // Visible in DevTools > Network > Timing: how long the queries themselves took.
+        $ms = round((microtime(true) - $started) * 1000, 1);
+        $since = round((microtime(true) - LARAVEL_START) * 1000, 1);
+        return response()->json(['results' => $results])
+            ->header('Server-Timing', sprintf('fs;dur=%s;desc="%d requests", app;dur=%s', $ms, count($requests), $since));
     }
 
     private function run(Engine $engine, array $r): array

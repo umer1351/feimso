@@ -14,9 +14,7 @@ class DeliveryAddressController extends Controller
 {
     public function __construct()
     {
-        if (!isset($_COOKIE['address_name'])) {
-            \Redirect::to('set-location')->send();
-        }
+        $this->middleware('location:address');
     }
 
     public function index()

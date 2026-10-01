@@ -16,9 +16,7 @@ class OrderController extends Controller
      */
     public function __construct()
     {
-        if (!isset($_COOKIE['section_id']) && !isset($_COOKIE['address_name'])) {
-            \Redirect::to('set-location')->send();
-        }
+        $this->middleware('location');
         $this->middleware('auth');
         error_reporting(0);
     }

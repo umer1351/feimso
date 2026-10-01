@@ -1,5 +1,6 @@
 @include('layouts.app')
-<div class="home" id="home"></div>
+{{-- Rendered server-side so #user_locationnew exists before the map scripts run. --}}
+<div class="home" id="home">{!! $homepageTemplate ?? '' !!}</div>
 <script type="text/javascript">
     var is_layer = 1;
 </script>
@@ -25,7 +26,7 @@
 
         homepageTemplateRef.get().then(async function (homepageTemplateSnapshots) {
             var homepageTemplateData = homepageTemplateSnapshots.data();
-            if (homepageTemplateData && homepageTemplateData.homepageTemplate) {
+            if (homepageTemplateData && homepageTemplateData.homepageTemplate && !$.trim($('#home').html())) {
                 $('#home').html(homepageTemplateData.homepageTemplate);
             }
             await globalSettingsRef.get().then(async function (globalSettingsSnapshots) {

@@ -26,8 +26,17 @@
         return m ? m.getAttribute('content') : '';
     }
 
+    // Laravel also accepts its encrypted XSRF-TOKEN cookie, for pages without the meta tag.
+    function xsrfCookie() {
+        var m = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        return m ? decodeURIComponent(m[1]) : '';
+    }
+
     function post(path, body, isForm) {
-        var headers = {'X-CSRF-TOKEN': csrfToken(), 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'};
+        var headers = {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'};
+        var token = csrfToken();
+        if (token) headers['X-CSRF-TOKEN'] = token;
+        else headers['X-XSRF-TOKEN'] = xsrfCookie();
         if (!isForm) headers['Content-Type'] = 'application/json';
         return fetch(BASE + path, {
             method: 'POST',

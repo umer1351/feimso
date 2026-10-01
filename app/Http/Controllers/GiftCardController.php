@@ -48,11 +48,7 @@ class GiftCardController extends Controller
 
     {
 
-        if (!isset($_COOKIE['address_name'])) {
-
-            \Redirect::to('set-location')->send();
-
-        }
+        $this->middleware('location:address');
 
         $this->middleware('auth');
 
