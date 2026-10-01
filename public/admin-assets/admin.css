@@ -1,0 +1,55 @@
+/* Feimso admin — small layer on top of Bootstrap 4 (LTR and RTL builds). */
+:root {
+    --adm-bg: #f4f6f9;
+    --adm-side: #1f2433;
+    --adm-side-text: #aab2c5;
+    --adm-side-active: #ff3b5c;
+    --adm-border: #e3e7ee;
+    --adm-muted: #6c757d;
+}
+
+body.admin { background: var(--adm-bg); font-size: 14px; }
+.admin-shell { display: flex; min-height: 100vh; }
+
+.admin-side {
+    width: 248px; flex: 0 0 248px; background: var(--adm-side); color: var(--adm-side-text);
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.admin-side .brand { display: block; padding: 18px 20px; color: #fff; font-weight: 600; font-size: 18px; text-decoration: none; }
+.admin-side .group { padding: 14px 20px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
+.admin-side a.item { display: flex; align-items: center; gap: 10px; padding: 7px 20px; color: var(--adm-side-text); text-decoration: none; }
+.admin-side a.item:hover { color: #fff; background: rgba(255,255,255,.04); }
+.admin-side a.item.active { color: #fff; box-shadow: inset 3px 0 0 var(--adm-side-active); background: rgba(255,255,255,.06); }
+[dir=rtl] .admin-side a.item.active { box-shadow: inset -3px 0 0 var(--adm-side-active); }
+
+.admin-main { flex: 1; min-width: 0; }
+.admin-top {
+    background: #fff; border-bottom: 1px solid var(--adm-border); padding: 10px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; z-index: 10;
+}
+.admin-top h1 { font-size: 18px; margin: 0; }
+.admin-content { padding: 24px; }
+
+.card { border-color: var(--adm-border); }
+.stat { padding: 18px; }
+.stat .n { font-size: 26px; font-weight: 600; }
+.stat .l { color: var(--adm-muted); }
+
+.table td, .table th { vertical-align: middle; }
+.table thead th { border-top: 0; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--adm-muted); white-space: nowrap; }
+.thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; background: #eef0f4; }
+.img-preview { max-height: 90px; border-radius: 6px; margin-top: 6px; }
+.badge-status { font-weight: 500; }
+.json-view { background: #0f1420; color: #d5dbe8; padding: 14px; border-radius: 8px; max-height: 520px; overflow: auto; font-size: 12px; direction: ltr; text-align: left; }
+textarea.code, input.code { font-family: SFMono-Regular, Consolas, monospace; font-size: 12px; direction: ltr; text-align: left; }
+.form-group label { font-weight: 500; }
+.help { color: var(--adm-muted); font-size: 12px; }
+.secret-state { font-size: 12px; }
+
+.side-toggle { display: none; }
+@media (max-width: 991px) {
+    .admin-side { position: fixed; z-index: 30; inset-inline-start: -260px; transition: inset-inline-start .2s; }
+    body.side-open .admin-side { inset-inline-start: 0; }
+    .side-toggle { display: inline-block; }
+    .admin-content { padding: 16px; }
+}

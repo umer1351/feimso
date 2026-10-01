@@ -227,3 +227,33 @@ Route::prefix('fs')->group(function () {
 
 Route::get('password/reset/{token}', [App\Http\Controllers\Auth\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('password/reset', [App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])->name('password.update');
+
+/*
+| Admin panel (/admin). Accounts with users.role = 'admin'.
+*/
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('login', [App\Http\Controllers\Admin\AuthController::class, 'show'])->name('login');
+    Route::post('login', [App\Http\Controllers\Admin\AuthController::class, 'login'])->middleware('throttle:20,1');
+    Route::get('locale/{locale}', [App\Http\Controllers\Admin\AuthController::class, 'locale'])->name('locale');
+
+    Route::middleware('admin')->group(function () {
+        Route::post('logout', [App\Http\Controllers\Admin\AuthController::class, 'logout'])->name('logout');
+        Route::get('/', App\Http\Controllers\Admin\DashboardController::class)->name('dashboard');
+
+        Route::get('settings/{tab?}', [App\Http\Controllers\Admin\SettingsController::class, 'edit'])->name('settings');
+        Route::post('settings/{tab}', [App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+
+        Route::post('users/{user}/wallet', [App\Http\Controllers\Admin\WalletController::class, 'adjust'])->name('wallet.adjust');
+
+        Route::controller(App\Http\Controllers\Admin\ResourceController::class)->prefix('r/{name}')->name('resource.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('{id}', 'show')->name('show');
+            Route::get('{id}/edit', 'edit')->name('edit');
+            Route::put('{id}', 'update')->name('update');
+            Route::delete('{id}', 'destroy')->name('destroy');
+            Route::post('{id}/status', 'status')->name('status');
+        });
+    });
+});
