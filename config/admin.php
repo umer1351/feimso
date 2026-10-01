@@ -156,7 +156,7 @@ return [
             'fields' => ['status' => ['type' => 'select', 'options' => $statuses], 'notes' => ['type' => 'textarea']],
         ],
         'provider_orders' => [
-            'icon' => 'tool', 'orders' => true, 'create' => false, 'title' => 'id', 'search' => ['status'],
+            'icon' => 'briefcase', 'orders' => true, 'create' => false, 'title' => 'id', 'search' => ['status'],
             'filters' => ['status' => ['type' => 'select', 'options' => $statuses]],
             'columns' => ['author' => 'path:author.firstName', 'provider' => 'path:provider.title', 'status' => 'status', 'payment_method', 'paymentStatus' => 'bool', 'createdAt' => 'datetime'],
             'fields' => ['status' => ['type' => 'select', 'options' => $statuses], 'paymentStatus' => ['type' => 'bool'], 'workerId' => ['type' => 'select', 'source' => ['collection' => 'providers_workers', 'label' => 'firstName']]],

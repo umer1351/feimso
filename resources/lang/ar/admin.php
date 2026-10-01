@@ -107,7 +107,7 @@ return [
         'show_in_homepage' => 'إظهار في الرئيسية', 'dine_in_active' => 'تناول الطعام في المطعم', 'nearByRadius' => 'نطاق القرب',
         'delivery_charge' => 'رسوم التوصيل', 'is_product_details' => 'إظهار القيم الغذائية', 'adminCommision' => 'عمولة الإدارة',
         'adminCommission' => 'عمولة الإدارة', 'author' => 'المالك', 'vendor' => 'المتجر', 'zoneId' => 'المنطقة', 'categoryID' => 'التصنيف',
-        'location' => 'العنوان', 'position' => 'الموقع على الخريطة', 'phonenumber' => 'الهاتف', 'reststatus' => 'مفتوح',
+        'location' => 'الموقع', 'position' => 'الموقع على الخريطة', 'phonenumber' => 'الهاتف', 'reststatus' => 'مفتوح',
         'isSelfDelivery' => 'توصيل ذاتي', 'enabledDiveInFuture' => 'تفعيل تناول الطعام', 'openDineTime' => 'وقت الفتح',
         'closeDineTime' => 'وقت الإغلاق', 'restaurantCost' => 'التكلفة لشخصين', 'workingHours' => 'ساعات العمل',
         'deliveryCharge' => 'رسوم التوصيل', 'vendorID' => 'المتجر', 'brandID' => 'العلامة التجارية', 'price' => 'السعر',

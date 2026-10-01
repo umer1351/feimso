@@ -13,5 +13,5 @@
 @elseif(str_starts_with($kind, 'ref:'))
     {{ $refs[substr($kind, 4)][$v] ?? ($v ?: '—') }}
 @else
-    {{ is_scalar($v) ? \Illuminate\Support\Str::limit((string) $v, 60) : ($v === null ? '—' : \Illuminate\Support\Str::limit(json_encode($v, JSON_UNESCAPED_UNICODE), 60)) }}
+    <bdi>{{ is_scalar($v) ? \Illuminate\Support\Str::limit((string) $v, 60) : ($v === null ? '—' : \Illuminate\Support\Str::limit(json_encode($v, JSON_UNESCAPED_UNICODE), 60)) }}</bdi>
 @endif

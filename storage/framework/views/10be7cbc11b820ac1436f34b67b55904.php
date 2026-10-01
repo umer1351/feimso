@@ -14,7 +14,6 @@
     <?php echo e($refs[substr($kind, 4)][$v] ?? ($v ?: '—')); ?>
 
 <?php else: ?>
-    <?php echo e(is_scalar($v) ? \Illuminate\Support\Str::limit((string) $v, 60) : ($v === null ? '—' : \Illuminate\Support\Str::limit(json_encode($v, JSON_UNESCAPED_UNICODE), 60))); ?>
-
+    <bdi><?php echo e(is_scalar($v) ? \Illuminate\Support\Str::limit((string) $v, 60) : ($v === null ? '—' : \Illuminate\Support\Str::limit(json_encode($v, JSON_UNESCAPED_UNICODE), 60))); ?></bdi>
 <?php endif; ?>
 <?php /**PATH C:\wamp64\www\feimso\resources\views/admin/partials/cell.blade.php ENDPATH**/ ?>

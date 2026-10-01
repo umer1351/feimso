@@ -16,7 +16,7 @@
                 <input type="search" name="q" value="<?php echo e(request('q')); ?>" class="form-control" placeholder="<?php echo e(__('admin.search')); ?>">
             </div>
             <?php $__currentLoopData = $r['filters']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $field => $def): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <div class="col-md-2 mb-2">
+                <div class="col-md-3 col-lg-2 mb-2" style="min-width:170px">
                     <select name="f_<?php echo e($field); ?>" class="form-control" onchange="this.form.submit()">
                         <option value=""><?php echo e(\App\Admin\Fields::label($field)); ?>: <?php echo e(__('admin.all')); ?></option>
                         <?php $__currentLoopData = $filterOptions[$field]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $val => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>

@@ -17,7 +17,7 @@
                 <input type="search" name="q" value="{{ request('q') }}" class="form-control" placeholder="{{ __('admin.search') }}">
             </div>
             @foreach($r['filters'] as $field => $def)
-                <div class="col-md-2 mb-2">
+                <div class="col-md-3 col-lg-2 mb-2" style="min-width:170px">
                     <select name="f_{{ $field }}" class="form-control" onchange="this.form.submit()">
                         <option value="">{{ \App\Admin\Fields::label($field) }}: {{ __('admin.all') }}</option>
                         @foreach($filterOptions[$field] as $val => $label)
