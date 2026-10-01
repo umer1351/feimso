@@ -47,7 +47,7 @@ class FirestoreController extends Controller
         }
         // Visible in DevTools > Network > Timing: how long the queries themselves took.
         $ms = round((microtime(true) - $started) * 1000, 1);
-        $since = round((microtime(true) - LARAVEL_START) * 1000, 1);
+        $since = round((microtime(true) - (defined('LARAVEL_START') ? LARAVEL_START : $started)) * 1000, 1);
         return response()->json(['results' => $results])
             ->header('Server-Timing', sprintf('fs;dur=%s;desc="%d requests", app;dur=%s', $ms, count($requests), $since));
     }
