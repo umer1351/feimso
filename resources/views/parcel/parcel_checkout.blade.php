@@ -401,7 +401,6 @@ session_start();
 </div>
 @include('layouts.footer')
 <script src="{{ asset('js/geofirestore.js') }}"></script>
-<script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
 <script type="text/javascript" src="{{asset('vendor/slick/slick.min.js')}}"></script>
 <script type="text/javascript">
     var currentCurrency = '';

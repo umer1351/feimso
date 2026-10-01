@@ -1,0 +1,417 @@
+{
+  "settings": {
+    "doc_id": "FIXED doc ids (config singleton docs): globalSettings, placeHolderImage, DriverNearBy, VendorNearBy, DeliveryCharge, googleMapKey, vendor, Version, specialDiscountOffer, story, languages, notification_setting, homepageTemplate, footerTemplate, privacyPolicy, termsAndConditions, ContactUs, maintenance_settings, CODSettings, razorpaySettings, stripeSettings, paypalSettings, walletSettings, payFastSettings, payStack, flutterWave, MercadoPago, xendit_settings, midtrans_settings, orange_money_settings, PaytmSettings, AdminCommission, taxSetting",
+    "fields": {},
+    "fixed_docs": {
+      "globalSettings": {
+        "isSelfDelivery": "bool",
+        "defaultCountryCode": "string (e.g. '+91'; code strips '+')",
+        "applicationName": "string",
+        "isEnableAdsFeature": "bool",
+        "appLogo": "string (image URL)"
+      },
+      "placeHolderImage": {
+        "image": "string (image URL)"
+      },
+      "DriverNearBy": {
+        "distanceType": "string ('Km' | 'Miles'; compared case-insensitively in parcel_checkout, exact 'Miles' elsewhere)",
+        "driverRadios": "string|int (radius, parseInt'd; typo of 'radius' is relied on)",
+        "selectedMapType": "string ('google' | other => leaflet/OSM)",
+        "enableOTPTripStartForRental": "bool"
+      },
+      "VendorNearBy": {
+        "radios": "string|int (dine-in vendor radius, parseInt'd; typo relied on)"
+      },
+      "DeliveryCharge": {
+        "amount": "float (flat delivery charge, used by dine-in/my_order/my_dinein)",
+        "vendor_can_modify": "bool",
+        "delivery_charges_per_km": "float",
+        "minimum_delivery_charges": "float",
+        "minimum_delivery_charges_within_km": "float"
+      },
+      "googleMapKey": {
+        "key": "string (Google Maps browser API key)",
+        "placeHolderImage": "string (read in layouts/footer.blade.php:1525 from googleMapKey doc - probably a bug, field likely never present)"
+      },
+      "vendor": {
+        "subscription_model": "bool"
+      },
+      "Version": {
+        "web_version": "string"
+      },
+      "specialDiscountOffer": {
+        "isEnable": "bool"
+      },
+      "story": {
+        "isEnabled": "bool"
+      },
+      "languages": {
+        "list": "array<map> - each item {title:string, slug:string, isActive:bool, is_rtl:bool (optional)}"
+      },
+      "notification_setting": {
+        "serviceJson": "string (FULL Firebase service-account JSON; posted to route storeServiceFile)"
+      },
+      "homepageTemplate": {
+        "homepageTemplate": "string (HTML injected with .html())"
+      },
+      "footerTemplate": {
+        "footerTemplate": "string (HTML)"
+      },
+      "privacyPolicy": {
+        "privacy_policy": "string (HTML)"
+      },
+      "termsAndConditions": {
+        "terms_and_condition": "string (HTML)"
+      },
+      "ContactUs": {
+        "Address": "string (capital A; used for google maps embed)"
+      },
+      "maintenance_settings": {
+        "isMaintenanceModeForCustomer": "bool (read server-side by app/Http/Middleware/FirebaseMaintenance.php, strict === true)"
+      },
+      "CODSettings": {
+        "isEnabled": "bool"
+      },
+      "razorpaySettings": {
+        "isEnabled": "bool",
+        "isSandboxEnabled": "bool",
+        "razorpayKey": "string",
+        "razorpaySecret": "string (SECRET)"
+      },
+      "stripeSettings": {
+        "isEnabled": "bool",
+        "isSandboxEnabled": "bool",
+        "stripeKey": "string",
+        "clientpublishableKey": "string (read only by transactions/index.blade.php instead of stripeKey)",
+        "stripeSecret": "string (SECRET)"
+      },
+      "paypalSettings": {
+        "isEnabled": "bool",
+        "isLive": "bool",
+        "paypalClient": "string",
+        "paypalAppId": "string (gift_card/giftcard.blade.php uses this as the client key instead of paypalClient)",
+        "paypalSecret": "string (SECRET)"
+      },
+      "walletSettings": {
+        "isEnabled": "bool"
+      },
+      "payFastSettings": {
+        "isEnable": "bool (note: isEnable, not isEnabled)",
+        "isSandbox": "bool",
+        "merchant_id": "string",
+        "merchant_key": "string (SECRET)",
+        "return_url": "string",
+        "cancel_url": "string",
+        "notify_url": "string"
+      },
+      "payStack": {
+        "isEnable": "bool",
+        "isSandbox": "bool",
+        "publicKey": "string",
+        "secretKey": "string (SECRET)"
+      },
+      "flutterWave": {
+        "isEnable": "bool",
+        "isSandbox": "bool",
+        "publicKey": "string",
+        "secretKey": "string (SECRET)",
+        "encryptionKey": "string (SECRET)"
+      },
+      "MercadoPago": {
+        "isEnabled": "bool",
+        "isSandboxEnabled": "bool",
+        "PublicKey": "string (capital P)",
+        "AccessToken": "string (SECRET, capital A)"
+      },
+      "xendit_settings": {
+        "enable": "bool (note: enable)",
+        "isSandbox": "bool",
+        "apiKey": "string (SECRET)",
+        "image": "string (logo URL)"
+      },
+      "midtrans_settings": {
+        "enable": "bool",
+        "isSandbox": "bool",
+        "serverKey": "string (SECRET)",
+        "image": "string (logo URL)"
+      },
+      "orange_money_settings": {
+        "enable": "bool",
+        "isSandbox": "bool",
+        "auth": "string (SECRET - auth header)",
+        "clientId": "string",
+        "clientSecret": "string (SECRET)",
+        "merchantKey": "string (SECRET)",
+        "notifyUrl": "string",
+        "returnUrl": "string",
+        "cancelUrl": "string",
+        "image": "string (logo URL)"
+      },
+      "PaytmSettings": {
+        "_unused": "ref created in transactions/index.blade.php:219 but never read; fields unknown from web code"
+      },
+      "AdminCommission": {
+        "_unused": "ref created in gift_card/giftcard.blade.php:537 but never read; real commission lives in sections.adminCommision"
+      },
+      "taxSetting": {
+        "_unused": "ref created in rental/rental_checkout.blade.php:70 and rental_orders_detail.blade.php:360 but never .get(); tax rows live in the `tax` collection"
+      }
+    },
+    "where_ops": [],
+    "order_by": [],
+    "query_notes": "Only .doc(<fixedId>).get() is used (221 call sites, no where/orderBy/limit/onSnapshot). placeHolderImage alone has 52 call sites, globalSettings 18, DriverNearBy 13, razorpaySettings 13. Server side: FirestoreHelper::getDocument('settings/maintenance_settings') in FirebaseMaintenance middleware.",
+    "geo": false,
+    "writes": "Only one client write: layouts/nav.blade.php:196 `database.collection('settings').doc('Version').set({})` when the Version doc is missing (creates an empty doc). Otherwise read-only from web; data comes from the admin panel.",
+    "access": "mixed: public-read for presentation docs (globalSettings, placeHolderImage, DriverNearBy, VendorNearBy, DeliveryCharge, vendor, Version, specialDiscountOffer, story, languages, homepageTemplate, footerTemplate, privacyPolicy, termsAndConditions, ContactUs, maintenance_settings, CODSettings, walletSettings, googleMapKey.key). Payment-gateway docs must be SPLIT: public flags/publishable keys (isEnabled/isEnable/enable, isSandbox*, isLive, razorpayKey, stripeKey/clientpublishableKey, paypalClient/paypalAppId, publicKey, PublicKey, merchant_id, image, *_url) may be exposed; secrets must be server-only (razorpaySecret, stripeSecret, paypalSecret, payStack.secretKey, flutterWave.secretKey/encryptionKey, merchant_key, MercadoPago.AccessToken, xendit apiKey, midtrans serverKey, orange auth/clientSecret/merchantKey). notification_setting must be server-only. Version write should be removed or admin-only.",
+    "notes": "SECURITY: (1) Every checkout page (checkout, gift_card/giftcard, parcel_checkout, rental_checkout, rental_orders_detail, ondemand_checkout, pay_extra_charge, pay_service_charge, transactions/index) reads ALL gateway SECRET keys into hidden inputs and POSTs them back to the PHP controllers (e.g. checkout.blade.php:984-1260, then 1764 razorpayKey, 2312 paystack_secret_key, 2422 flutterWave_secret_key, 2548 xendit_apiKey, 2654 midtrans_serverKey, 2772 orangepay_merchantKey) - secrets are world-readable today. In MySQL these must be read server-side only and the controllers must stop trusting posted keys. (2) notification_setting.serviceJson is a Firebase service-account credential readable by every visitor (footer.blade.php:2082) and re-posted to route storeServiceFile. (3) DeliveryCharge values are copied into cookie 'deliveryChargemain' (products/detail.blade.php:309) and CheckoutController/ProductController compute delivery fees from that client cookie. OTHER: enable-flag naming is inconsistent per gateway (isEnabled vs isEnable vs enable); sandbox flag is isSandboxEnabled (razorpay/stripe/MercadoPago) vs isSandbox (others) vs isLive (paypal, inverted). Stripe key read as stripeKey in 8 files but clientpublishableKey in transactions/index; paypal client as paypalClient in 8 files but paypalAppId in giftcard - store both or normalize. Typos relied on: driverRadios, radios, MercadoPago PublicKey/AccessToken, ContactUs.Address. Suggest table `settings(doc_id PK, data JSON)` or one column per field per doc; keep doc ids exactly."
+  },
+
+  "currencies": {
+    "doc_id": "auto (admin-created); web never reads doc id",
+    "fields": {
+      "isActive": { "type": "bool", "queried": true, "ordered": false },
+      "symbol": { "type": "string", "queried": false, "ordered": false },
+      "code": { "type": "string", "queried": false, "ordered": false, "shape": "ISO code e.g. 'IDR','USD' (checked against Xendit-supported list)" },
+      "decimal_degits": { "type": "int", "queried": false, "ordered": false, "shape": "typo of 'digits' relied on everywhere (80 reads)" },
+      "symbolAtRight": { "type": "bool", "queried": false, "ordered": false }
+    },
+    "where_ops": [["isActive", "=="]],
+    "order_by": [],
+    "query_notes": "51 identical call sites: where('isActive','==',true).get() then snapshots.docs[0] (assumes exactly one active row). No limit/onSnapshot.",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "Admin panel probably also stores name/id (not read by web). Enforce single active currency in MySQL (or ORDER BY + LIMIT 1). gift_card/giftcard.blade.php builds fallback currencyData objects literally (lines 1449,1613,1703,1797) - not a schema source."
+  },
+
+  "sections": {
+    "doc_id": "auto/admin-generated id; the doc also stores the same value in field `id` (queried with where('id','==',section_id) AND fetched with .doc(section_id)). section_id comes from cookie.",
+    "fields": {
+      "id": { "type": "string", "queried": true, "ordered": false },
+      "name": { "type": "string", "queried": false, "ordered": false },
+      "isActive": { "type": "bool", "queried": true, "ordered": false },
+      "serviceType": { "type": "string", "queried": false, "ordered": false, "shape": "enum: 'Multivendor Delivery Service','Ecommerce Service','On Demand Service','Parcel Delivery Service','Rental Service','Cab Service'" },
+      "sectionImage": { "type": "string", "queried": false, "ordered": false, "shape": "image URL" },
+      "color": { "type": "string", "queried": false, "ordered": false, "shape": "hex color" },
+      "dine_in_active": { "type": "bool", "queried": false, "ordered": false },
+      "nearByRadius": { "type": "string", "queried": false, "ordered": false, "shape": "numeric string, parseInt'd, compared to ''" },
+      "delivery_charge": { "type": "float", "queried": false, "ordered": false, "shape": "ecommerce flat delivery charge (products/detail.blade.php:305)" },
+      "is_product_details": { "type": "bool", "queried": false, "ordered": false },
+      "cab_service_template": { "type": "string", "queried": false, "ordered": false, "shape": "HTML for cab landing page" },
+      "adminCommision": { "type": "map", "queried": false, "ordered": false, "shape": "{enable: bool, commission: float|string, type: string ('percentage' | 'fixed'/'Fixed'/'fix')} - typo 'Commision' relied on" }
+    },
+    "where_ops": [["isActive", "=="], ["id", "=="]],
+    "order_by": [],
+    "query_notes": ".doc(section_id).get() in ~15 places; where('id','==',section_id) in 8; where('isActive','==',true) for the section picker (layer.blade.php:78, footer.blade.php:619,653). adminCommision is cached to localStorage (footer.blade.php:2145).",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "BUG: parcel_checkout.blade.php:704-712 and rental_checkout.blade.php:291-299 test `AdminCommissionRes.enable` at TOP level (not adminCommision.enable) - field likely never exists, so commission becomes 0 for those flows; don't add a top-level enable column unless admin writes it. Commission type casing inconsistent ('fixed' vs 'Fixed'). Commission is computed client-side and sent to server via hidden inputs (#adminCommission) - security: recompute server-side."
+  },
+
+  "tax": {
+    "doc_id": "auto/admin-generated; stored again in field `id`",
+    "fields": {
+      "id": { "type": "string", "queried": false, "ordered": false },
+      "title": { "type": "string", "queried": false, "ordered": false },
+      "country": { "type": "string", "queried": true, "ordered": false, "shape": "country name, matched against cityToCountry[timezone city]" },
+      "enable": { "type": "bool", "queried": true, "ordered": false },
+      "sectionId": { "type": "string", "queried": true, "ordered": false },
+      "tax": { "type": "float", "queried": false, "ordered": false, "shape": "numeric (likely stored as string by admin; parseFloat on use)" },
+      "type": { "type": "string", "queried": false, "ordered": false, "shape": "'percentage' | 'fix'/'fixed'" }
+    },
+    "where_ops": [["country", "=="], ["enable", "=="], ["sectionId", "=="]],
+    "order_by": [],
+    "query_notes": "11 call sites, all where(country==).where(enable==true).where(sectionId==) except gift_card/giftcard.blade.php:557 which omits sectionId. Composite index (country, enable, sectionId).",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "Rows are copied into order docs as taxSetting [{country,enable,id,tax,title,type}] client-side - tax amount is client-computed (security: recompute server-side). Gift-card tax rows may have no sectionId."
+  },
+
+  "zone": {
+    "doc_id": "auto/admin-generated; stored again in field `id`",
+    "fields": {
+      "id": { "type": "string", "queried": false, "ordered": false },
+      "publish": { "type": "bool", "queried": true, "ordered": false },
+      "area": { "type": "array", "queried": false, "ordered": false, "shape": "array<GeoPoint> polygon vertices, each read as {latitude: float, longitude: float}" }
+    },
+    "where_ops": [["publish", "=="]],
+    "order_by": [],
+    "query_notes": "layouts/footer.blade.php:2105 getUserZoneId(): fetches ALL published zones and runs point-in-polygon in JS; result user_zone_id is matched against vendors.zoneId.",
+    "geo": true,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "Not GeoFirestore, but geo data: area is a GeoPoint array. In MySQL store as JSON [[lat,lng],...] or a POLYGON column (then ST_Contains server-side). Admin likely also has a name field (not read by web)."
+  },
+
+  "cms_pages": {
+    "doc_id": "auto (admin); web looks up by slug",
+    "fields": {
+      "slug": { "type": "string", "queried": true, "ordered": false },
+      "name": { "type": "string", "queried": false, "ordered": false },
+      "description": { "type": "string", "queried": false, "ordered": false, "shape": "HTML content" }
+    },
+    "where_ops": [["slug", "=="]],
+    "order_by": [],
+    "query_notes": "cms/index.blade.php:15 single query, docs[0].",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "Admin probably also stores publish/status flag; web does not filter on it. Unique index on slug."
+  },
+
+  "email_templates": {
+    "doc_id": "auto (admin); looked up by type",
+    "fields": {
+      "type": { "type": "string", "queried": true, "ordered": false, "shape": "values used: 'new_order_placed', 'new_ondemand_book', 'new_car_book'" },
+      "subject": { "type": "string", "queried": false, "ordered": false },
+      "message": { "type": "string", "queried": false, "ordered": false, "shape": "HTML with {placeholders} like {username}" }
+    },
+    "where_ops": [["type", "=="]],
+    "order_by": [],
+    "query_notes": "layouts/footer.blade.php:847-848, rental/rental_checkout.blade.php:78; docs[0].",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read (low sensitivity) - better server-only since emails should be rendered/sent server-side",
+    "notes": "Client builds the email body and calls a sendEmail route with arbitrary subject/message/recipients - an open mail relay risk; move rendering server-side. Admin may store isSendToAdmin (not read by web)."
+  },
+
+  "dynamic_notification": {
+    "doc_id": "auto (admin); looked up by type",
+    "fields": {
+      "type": { "type": "string", "queried": true, "ordered": false, "shape": "values used: order_placed, schedule_order, dinein_placed, dinein_accepted, booking_placed, service_cancelled, rental_booked, restaurant_accepted, restaurant_rejected, store_accepted, store_completed, store_intransit, driver_accepted, driver_completed, takeaway_completed" },
+      "subject": { "type": "string", "queried": false, "ordered": false },
+      "message": { "type": "string", "queried": false, "ordered": false }
+    },
+    "where_ops": [["type", "=="]],
+    "order_by": [],
+    "query_notes": "8 call sites fetch the whole collection and filter in JS (checkout:675, giftcard:649, footer:1710, accepted_booking:287, pending_booking:257, ondemand_checkout:517, rental_checkout:54, rental_orders_detail:339); dinein/dyiningvendor.blade.php:336,390 use where('type','==','dinein_placed').",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "Used as push-notification title/body sent from the browser to vendors' fcmToken - client-triggered push is a spam vector; move server-side. Unique index on type."
+  },
+
+  "banner_items": {
+    "doc_id": "auto (admin)",
+    "fields": {
+      "sectionId": { "type": "string", "queried": true, "ordered": false },
+      "is_publish": { "type": "bool", "queried": true, "ordered": false },
+      "set_order": { "type": "int", "queried": false, "ordered": true },
+      "position": { "type": "string", "queried": false, "ordered": false, "shape": "'top' | 'middle'" },
+      "web_banner": { "type": "string", "queried": false, "ordered": false, "shape": "image URL" },
+      "redirect_type": { "type": "string", "queried": false, "ordered": false, "shape": "optional; 'store' | 'product' | 'external_link'" },
+      "redirect_id": { "type": "string", "queried": false, "ordered": false, "shape": "vendor id, product id, or URL depending on redirect_type" }
+    },
+    "where_ops": [["sectionId", "=="], ["is_publish", "=="]],
+    "order_by": [["set_order", "asc"]],
+    "query_notes": "home_page/ecommerce_home:235, multivendor_home:171, ondemand_home:127, parcel_home:60 - identical query.",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "redirect_type/redirect_id are optional (checked with hasOwnProperty). Admin likely also stores title/photo (mobile banner) not read by web."
+  },
+
+  "advertisements": {
+    "doc_id": "auto (vendor/admin panel)",
+    "fields": {
+      "status": { "type": "string", "queried": true, "ordered": false, "shape": "'approved' used by web" },
+      "paymentStatus": { "type": "bool", "queried": true, "ordered": false },
+      "vendorId": { "type": "string", "queried": false, "ordered": false, "shape": "FK vendors.id (filtered in JS)" },
+      "startDate": { "type": "timestamp", "queried": false, "ordered": false, "shape": "Firestore Timestamp or date string (code handles both)" },
+      "endDate": { "type": "timestamp", "queried": false, "ordered": false, "shape": "Firestore Timestamp or date string" },
+      "isPaused": { "type": "bool", "queried": false, "ordered": false },
+      "priority": { "type": "string", "queried": false, "ordered": false, "shape": "numeric string or 'N/A'/null (sorted in JS via parseInt)" },
+      "type": { "type": "string", "queried": false, "ordered": false, "shape": "'restaurant_promotion' | other (video promotion)" },
+      "title": { "type": "string", "queried": false, "ordered": false },
+      "description": { "type": "string", "queried": false, "ordered": false },
+      "coverImage": { "type": "string", "queried": false, "ordered": false },
+      "profileImage": { "type": "string", "queried": false, "ordered": false },
+      "video": { "type": "string", "queried": false, "ordered": false, "shape": "video URL" },
+      "showRating": { "type": "bool", "queried": false, "ordered": false },
+      "showReview": { "type": "bool", "queried": false, "ordered": false }
+    },
+    "where_ops": [["status", "=="], ["paymentStatus", "=="]],
+    "order_by": [],
+    "query_notes": "home_page/ecommerce_home.blade.php:951 and multivendor_home.blade.php:1189: fetch all approved+paid ads, then filter in JS by vendorId in nearby list, vendor.zoneId == user_zone_id, !isPaused, startDate<=now<=endDate, sort by priority. Gated by settings/globalSettings.isEnableAdsFeature.",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read (only approved+paid rows should be exposed)",
+    "notes": "priority mixes numbers and 'N/A' - store as nullable int. Date filters belong in SQL. rating/reviewsCount are merged from vendors, not stored on the ad."
+  },
+
+  "story": {
+    "doc_id": "admin/vendor-app created; likely = vendorID (one story doc per vendor) - not determinable from web code",
+    "fields": {
+      "vendorID": { "type": "string", "queried": true, "ordered": false },
+      "videoUrl": { "type": "array", "queried": false, "ordered": false, "shape": "array<string> video URLs" },
+      "videoThumbnail": { "type": "string", "queried": false, "ordered": false, "shape": "image URL" },
+      "createdAt": { "type": "timestamp", "queried": false, "ordered": false }
+    },
+    "where_ops": [["vendorID", "=="]],
+    "order_by": [],
+    "query_notes": "home_page/multivendor_home.blade.php:1103, one query per nearby vendor with .limit(5) (N+1). Gated by settings/story.isEnabled.",
+    "geo": false,
+    "writes": "read-only from web (written by vendor app)",
+    "access": "public-read",
+    "notes": "Capitalised 'vendorID' (vs advertisements.vendorId). Replace N+1 with WHERE vendorID IN (...)."
+  },
+
+  "review_attributes": {
+    "doc_id": "auto (admin); stored again in field `id`",
+    "fields": {
+      "id": { "type": "string", "queried": true, "ordered": false },
+      "title": { "type": "string", "queried": false, "ordered": false }
+    },
+    "where_ops": [["id", "in"]],
+    "order_by": [],
+    "query_notes": "products/detail.blade.php:181 fetches whole collection (id->title map); my_order/completed_order.blade.php:305 where('id','in', category.review_attributes).",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "Referenced by vendor_categories.review_attributes (array of ids) and review docs' reviewAttributes {attrId: rating}. Firestore 'in' is capped at 10 ids."
+  },
+
+  "brands": {
+    "doc_id": "auto (admin); doc.id used as brand id (vendor_products.brandID)",
+    "fields": {
+      "id": { "type": "string", "queried": false, "ordered": false, "shape": "web uses listval.id (doc id); field may also exist" },
+      "title": { "type": "string", "queried": false, "ordered": false },
+      "photo": { "type": "string", "queried": false, "ordered": false, "shape": "image URL" },
+      "sectionId": { "type": "string", "queried": true, "ordered": false },
+      "is_publish": { "type": "bool", "queried": true, "ordered": false }
+    },
+    "where_ops": [["sectionId", "=="], ["is_publish", "=="]],
+    "order_by": [],
+    "query_notes": "home_page/ecommerce_home.blade.php:237 where(sectionId).where(is_publish).limit(7); products/list.blade.php:34 same without limit; brands/index.blade.php:15 where(sectionId) only (shows unpublished brands too); .doc(id).get() in products/detail:1104,1242 and products/list:33,202.",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read",
+    "notes": "brands/index omits is_publish filter (probably a bug). getBrandData() in products/detail.blade.php:1241 returns nothing (missing return of promise) - dead code."
+  },
+
+  "tmp": {
+    "doc_id": "n/a - used ONLY as an ID generator: database.collection('tmp').doc().id (34 call sites)",
+    "fields": {},
+    "where_ops": [],
+    "order_by": [],
+    "query_notes": "Never read or written. Generated ids become primary keys for wallet rows (checkout:2982, accepted_booking:614/649/663/681, pending_booking:568, parcel_checkout:1604, ondemand_checkout:2267, rental_orders_detail:1238, pay_extra_charge:1471/1499, pay_service_charge:1865/1893/1961, service_charge/success:78/92, extra_charge/success:70, my_giftcard:356), orders (gift_card/success:46, ondemand_checkout:342, pay_extra_charge:325, pay_service_charge:339, providersService/success:59), reviews (my_dinein/dinein:189, completed_order:586, parcel_orders:769, rental_orders:246, rental_orders_detail:793, completed_booking:653/656), addresses (delivery_address/index:228), gift cards (giftcard:527), dine-in booking (dyiningvendor:1149), multivendor_home:1418.",
+    "geo": false,
+    "writes": "none (no document is ever created)",
+    "access": "n/a",
+    "notes": "No table needed. Replace with a client-side id helper (20-char Firestore-style id or UUID) or, better, let the server assign ids. Target collections need VARCHAR ids (Firestore ids are 20 chars)."
+  },
+
+  "temp": {
+    "doc_id": "n/a - ID generator only: rental/rental_checkout.blade.php:23 `database.collection('temp').doc().id` (rental order id)",
+    "fields": {},
+    "where_ops": [],
+    "order_by": [],
+    "query_notes": "Never read or written.",
+    "geo": false,
+    "writes": "none",
+    "access": "n/a",
+    "notes": "Same as tmp; no table needed."
+  }
+}

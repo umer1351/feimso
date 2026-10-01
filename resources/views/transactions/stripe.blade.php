@@ -919,7 +919,6 @@
 @include('layouts.footer')
 
 <script src="{{ asset('js/geofirestore.js') }}"></script>
-<script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
 <script src="https://js.stripe.com/v3/"></script>
 
 <script type="text/javascript">

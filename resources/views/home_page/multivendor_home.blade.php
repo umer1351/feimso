@@ -138,8 +138,7 @@
     <link rel="stylesheet" href="{{ asset('css/dist/zuck.min.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dist/skins/snapssenger.css') }}">
     <script src="{{ asset('js/dist/zuck.min.js') }}"></script>
-    <script src="https://unpkg.com/geofirestore@5.2.0/dist/geofirestore.js"></script>
-    <script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
+    <script src="{{ asset('js/geofirestore.js') }}"></script>
     <script type="text/javascript" src="{{ asset('vendor/swiper/swiper.min.js') }}"></script>
     <script type="text/javascript">
         var firestore = firebase.firestore();

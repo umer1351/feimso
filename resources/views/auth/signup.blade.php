@@ -143,13 +143,8 @@ foreach ($countries as $keycountry => $valuecountry) {
 <script type="2962f67e2ff6ccac59b12edc-text/javascript" src="js/siddhi.js"></script>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.2.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.2.0/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.2.0/firebase-storage.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.2.0/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/7.2.0/firebase-database.js"></script>
+<script src="{{ asset('js/firebase-local.js') }}"></script>
 <script src="{{ asset('js/geofirestore.js') }}"></script>
-<script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
 <script src="{{ asset('vendor/select2/dist/js/select2.min.js') }}"></script>
 <script src="{{ asset('js/crypto-js.js') }}"></script>
 <script src="{{ asset('js/jquery.cookie.js') }}"></script>

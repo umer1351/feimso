@@ -48,9 +48,13 @@ class HomeController extends Controller
         return view('layer');
     }
 
-    public function storeServiceFile(Request $request){
-		if(!empty($request->serviceJson) && !Storage::disk('local')->has('firebase/credentials.json')){
-			Storage::disk('local')->put('firebase/credentials.json',file_get_contents(base64_decode($request->serviceJson)));
-		}
-	}
+    /**
+     * Used to let the browser upload the Firebase service-account file, which
+     * the server then fetched with file_get_contents() on a client-supplied
+     * path. Firebase is gone, and that was a file-read/SSRF hole, so it is a no-op.
+     */
+    public function storeServiceFile(Request $request)
+    {
+        return response()->noContent();
+    }
 }

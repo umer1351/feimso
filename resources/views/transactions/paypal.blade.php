@@ -36,7 +36,6 @@
 @include('layouts.footer')
 @include('layouts.nav')
 <script src="{{ asset('js/geofirestore.js') }}"></script>
-<script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
 <script src="https://www.paypal.com/sdk/js?client-id=<?php echo $paypalKey; ?>&currency=USD"></script>
 <script type="text/javascript">
 window.onload = function() {

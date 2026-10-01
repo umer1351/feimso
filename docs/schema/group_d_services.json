@@ -1,0 +1,400 @@
+{
+  "providers_services": {
+    "doc_id": "Firestore auto id assigned by the admin/provider app; the doc id is duplicated in the `id` field (web reads by doc(id) and by where('id','==',x) interchangeably).",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false, "shape": "same as doc id; also used with '!=' in related-services query"},
+      "author": {"type": "string", "queried": true, "ordered": false, "shape": "provider user id (users.id, role=provider)"},
+      "authorName": {"type": "string", "queried": false, "ordered": false},
+      "title": {"type": "string", "queried": false, "ordered": false, "shape": "client-side substring search via title.toLowerCase()"},
+      "description": {"type": "string", "queried": false, "ordered": false, "shape": "HTML/plain text"},
+      "price": {"type": "string", "queried": false, "ordered": false, "shape": "numeric stored as string, always parseFloat()'d"},
+      "disPrice": {"type": "string", "queried": false, "ordered": false, "shape": "discount price as string; '0' or '' means no discount"},
+      "priceUnit": {"type": "string", "queried": false, "ordered": false, "shape": "'Hourly' | 'Fixed' (anything not 'Hourly' treated as fixed)"},
+      "photos": {"type": "array", "queried": false, "ordered": false, "shape": "array<string> image URLs; photos[0] is the thumbnail"},
+      "address": {"type": "string", "queried": false, "ordered": false},
+      "latitude": {"type": "float", "queried": false, "ordered": false, "shape": "used for client-side zone check getUserZoneId(lat,lng)"},
+      "longitude": {"type": "float", "queried": false, "ordered": false},
+      "g": {"type": "map", "queried": true, "ordered": true, "shape": "GeoFirestore v4: {geohash:string, geopoint:geopoint}; implicitly range-queried/ordered by .near()"},
+      "coordinates": {"type": "geopoint", "queried": false, "ordered": false, "shape": "GeoFirestore v4 coordinates key (survives into provider_orders.provider embed)"},
+      "categoryId": {"type": "string", "queried": true, "ordered": false, "shape": "FK provider_categories.id (level 0)"},
+      "subCategoryId": {"type": "string", "queried": false, "ordered": false, "shape": "FK provider_categories.id (sub-level)"},
+      "sectionId": {"type": "string", "queried": true, "ordered": false, "shape": "FK sections.id"},
+      "publish": {"type": "bool", "queried": true, "ordered": false},
+      "days": {"type": "array", "queried": false, "ordered": false, "shape": "array<string> weekday names, e.g. ['Monday','Tuesday']"},
+      "startTime": {"type": "string", "queried": false, "ordered": false, "shape": "'HH:mm' opening time (string compare against current time)"},
+      "endTime": {"type": "string", "queried": false, "ordered": false, "shape": "'HH:mm' closing time"},
+      "reviewsCount": {"type": "int", "queried": false, "ordered": false, "shape": "may be missing/''/NaN on old docs"},
+      "reviewsSum": {"type": "float", "queried": false, "ordered": false, "shape": "sum of ratings; avg = reviewsSum/reviewsCount"},
+      "createdAt": {"type": "timestamp", "queried": false, "ordered": true}
+    },
+    "where_ops": [
+      ["id", "=="], ["id", "!="], ["author", "=="], ["sectionId", "=="], ["publish", "=="], ["categoryId", "=="]
+    ],
+    "order_by": [
+      {"field": "createdAt", "direction": "asc", "where": "layouts/footer.blade.php:336-343 subscription item-limit check (where author== orderBy createdAt asc limit(itemLimit), then startAfter(lastDoc))"}
+    ],
+    "pagination": "limit(pagesize) home; limit(200) popular; limit(4) related; limit(itemLimit)+startAfter in footer subscription check",
+    "geo": true,
+    "geo_usage": "geoFirestore.collection('providers_services').near({center: GeoPoint(address_lat,address_lng), radius: VendorNearBy km}).where('sectionId','==').where('publish','==') [+ where categoryId/author] — home_page/ondemand_home.blade.php:487, providersService/servicesList.blade.php:164. Results are then filtered client-side by zone (latitude/longitude) and provider subscription validity.",
+    "writes": "Mostly read-only from web (created by admin/provider panel). Exception: customer review flow updates aggregate rating: my_booking/completed_booking.blade.php:768 update({reviewsCount, reviewsSum}).",
+    "access": "public-read for publish==true. Writes must be server-side only; the reviewsCount/reviewsSum update must move to a server endpoint that recomputes from the reviews table (items_review) instead of trusting browser math.",
+    "notes": "price/disPrice are strings. reviewsCount/reviewsSum can be missing/''/NaN (code guards with isNaN). startTime/endTime are 'HH:mm' strings, not timestamps (name clash with provider_orders.startTime which IS a timestamp). Geo docs need both g{geohash,geopoint} and coordinates; MySQL should store lat/lng (DECIMAL) + optional geohash index and drop g/coordinates. Full doc is embedded (denormalized) into provider_orders.provider at checkout. 'Invalid' services (provider subscription expired / over itemLimit) are computed client-side in footer.blade.php:300-360 from users.subscription_plan.itemLimit, subscriptionTotalOrders, subscriptionExpiryDate."
+  },
+
+  "provider_orders": {
+    "doc_id": "client-generated Firestore auto id: database.collection('tmp').doc().id (20 chars) — ondemand_checkout.blade.php:342 and providersService/success.blade.php:59; written with doc(id).set() and duplicated in field `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false},
+      "address": {"type": "map", "queried": false, "ordered": false, "shape": "{address:string|null, addressAs:string|null, id:string|null, isDefault:bool|null, landmark:string|null, locality:string, location:{latitude:float, longitude:float}} — copy of one users.shippingAddress[] entry, or cookie fallback (address_name/address_lat/address_lng) with nulls"},
+      "adminCommission": {"type": "string", "queried": false, "ordered": false, "shape": "numeric string from hidden input #adminCommission (section default or provider override)"},
+      "adminCommissionType": {"type": "string", "queried": false, "ordered": false, "shape": "'percentage' | 'fixed' (casing varies: 'Fixed' used elsewhere)"},
+      "author": {"type": "map", "queried": true, "ordered": false, "shape": "full snapshot of customer users doc (firstName, lastName, email, phoneNumber, profilePictureURL, id, fcmToken, shippingAddress[], wallet_amount, ...). Direct checkout deletes g/createdAt/coordinates; gateway success path embeds it unmodified. Queried on author.id (footer onSnapshot)."},
+      "authorID": {"type": "string", "queried": true, "ordered": false, "shape": "customer users.id (owner)"},
+      "couponCode": {"type": "string", "queried": false, "ordered": false, "shape": "'' when none"},
+      "createdAt": {"type": "timestamp", "queried": false, "ordered": true, "shape": "serverTimestamp()"},
+      "discount": {"type": "string", "queried": false, "ordered": false, "shape": "discount AMOUNT as string, default '0.0'"},
+      "discountLabel": {"type": "string", "queried": false, "ordered": false, "shape": "coupon face value (e.g. '10'), default '0.0'"},
+      "discountType": {"type": "string", "queried": false, "ordered": false, "shape": "'Percentage' | 'Fix'/'Fixed' | ''"},
+      "extraCharges": {"type": "string", "queried": false, "ordered": false, "shape": "'' at create; provider app sets numeric (string) extra charge during 'Order Ongoing'"},
+      "extraChargesDescription": {"type": "string", "queried": false, "ordered": false},
+      "extraPaymentStatus": {"type": "bool", "queried": false, "ordered": false, "shape": "true at create in direct checkout (missing in gateway success path); set true after extra-charge / service-charge payment"},
+      "newScheduleDateTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "null at create; rescheduled time set by provider app"},
+      "notes": {"type": "string", "queried": false, "ordered": false},
+      "otp": {"type": "string", "queried": false, "ordered": false, "shape": "6-digit string generated in browser (Math.random)"},
+      "paymentStatus": {"type": "bool", "queried": false, "ordered": false, "shape": "false for Hourly services (paid later), true for fixed price at create"},
+      "payment_method": {"type": "string", "queried": false, "ordered": false, "shape": "'cod'|'wallet'|'razorpay'|'stripe'|'paypal'|'payfast'|'paystack'|'flutterwave'|'mercadopago'|'xendit'|'midtrans'|'orangepay'|'' (Hourly)"},
+      "provider": {"type": "map", "queried": false, "ordered": false, "shape": "full providers_services doc snapshot minus g/createdAt: {id, author, authorName, title, description, price:string, disPrice:string, priceUnit, photos[], address, latitude, longitude, coordinates:geopoint, categoryId, subCategoryId, sectionId, publish, days[], startTime, endTime, reviewsCount, reviewsSum}"},
+      "quantity": {"type": "int", "queried": false, "ordered": false},
+      "reason": {"type": "string", "queried": false, "ordered": false, "shape": "null at create; cancellation reason typed by customer"},
+      "scheduleDateTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "booking date/time chosen by customer (JS Date)"},
+      "sectionId": {"type": "string", "queried": true, "ordered": false},
+      "status": {"type": "string", "queried": false, "ordered": false, "shape": "'Order Placed'|'Order Accepted'|'Order Assigned'|'Order Ongoing'|'Order Completed'|'Order Cancelled'|'Order Rejected' (filtered client-side, never in where())"},
+      "taxSetting": {"type": "array", "queried": false, "ordered": false, "shape": "array<{country:string, enable:bool, id:string, tax:string|number, title:string, type:'fix'|'percentage'}> copied from tax collection"},
+      "workerId": {"type": "string", "queried": false, "ordered": false, "shape": "'' at create; FK providers_workers.id assigned by provider"},
+      "startTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "READ-ONLY on web: set by provider/worker app when job starts"},
+      "endTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "READ-ONLY on web: set by provider/worker app when job ends; null check used in footer notifications"}
+    },
+    "where_ops": [
+      ["id", "=="], ["authorID", "=="], ["sectionId", "=="], ["author.id", "=="]
+    ],
+    "order_by": [
+      {"field": "createdAt", "direction": "desc", "where": "my_booking/my_booking.blade.php:124 (authorID== && sectionId== orderBy createdAt desc)"}
+    ],
+    "pagination": "none (full list per user)",
+    "realtime": "onSnapshot on where('author.id','==',cuser_id) in layouts/footer.blade.php:1851 — listens for 'modified' changes to status/extraCharges/endTime to show notifications. Needs a polling or push replacement.",
+    "geo": false,
+    "writes": "CLIENT CREATES AND UPDATES. Create: set() at providersService/ondemand_checkout.blade.php:2173 (cod/wallet) and providersService/success.blade.php:173 (after gateway redirect; order_json comes from server session but was originally posted by browser). Updates: cancel {reason, status:'Order Cancelled'} at my_booking/pending_booking.blade.php:527, accepted_booking.blade.php:557, ongoing_booking.blade.php:623; payment {paymentStatus, payment_method, couponCode, discount, discountLabel, discountType, extraPaymentStatus} at providersService/service_charge/pay_service_charge.blade.php:1997 and service_charge/success.blade.php:115; {extraPaymentStatus:true} at extra_charge/pay_extra_charge.blade.php:1557 and extra_charge/success.blade.php:84. Side effects done in browser alongside: users.wallet_amount debit/credit and wallet docs (customer + provider + admin commission).",
+    "access": "owner (authorID) for read + cancel; provider (provider.author) and assigned worker (workerId) need read/update from their apps. All money fields and paymentStatus/extraPaymentStatus must be set server-side only.",
+    "security": "HIGH: browser sets paymentStatus=true, extraPaymentStatus=true, discount, adminCommission, payment_method and wallet balances directly (wallet path checks balance only in JS). Coupon validity/amount is computed in browser and posted to apply-service-coupon. OTP is generated client-side. Cancel from client triggers client-side wallet refunds (updateUserWallet/updateProviderWallet). Payment gateway secrets (razorpaySecret, orangepay_clientSecret, ...) are read from settings into hidden inputs and posted back by the browser.",
+    "notes": "Numeric money fields are strings (discount, discountLabel, adminCommission, provider.price/disPrice, extraCharges). author/provider are full denormalized snapshots — in MySQL keep author_id/service_id FKs plus a JSON snapshot column if historical display is required. extraPaymentStatus absent on gateway-created orders. startTime/endTime/newScheduleDateTime/workerId are populated by other apps (provider/worker), never by web. adminCommissionType casing inconsistent ('percentage' vs 'fixed'/'Fixed'). status is a free string."
+  },
+
+  "providers_workers": {
+    "doc_id": "id field equals doc id (doc(workerId).update and where('id','==',workerId) both used); created by provider app/admin.",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false},
+      "firstName": {"type": "string", "queried": false, "ordered": false},
+      "lastName": {"type": "string", "queried": false, "ordered": false},
+      "email": {"type": "string", "queried": false, "ordered": false},
+      "phoneNumber": {"type": "string", "queried": false, "ordered": false},
+      "address": {"type": "string", "queried": false, "ordered": false},
+      "profilePictureURL": {"type": "string", "queried": false, "ordered": false},
+      "reviewsCount": {"type": "int", "queried": false, "ordered": false, "shape": "may be ''/null/NaN"},
+      "reviewsSum": {"type": "float", "queried": false, "ordered": false}
+    },
+    "where_ops": [["id", "=="]],
+    "order_by": [],
+    "geo": false,
+    "writes": "Read-only except rating aggregate: my_booking/completed_booking.blade.php:741 update({reviewsCount, reviewsSum}).",
+    "access": "mixed: public-read of display fields (name, photo, phone, email shown to the customer whose booking the worker is assigned to — ideally restrict contact fields to that customer). Rating update must be server-side.",
+    "notes": "Web only reads display/contact fields; the provider/worker app almost certainly stores more (providerId/author, fcmToken, active, location, password/auth fields, sectionId) — confirm against admin panel before final migration. Email/phone exposure to any logged-in user (where id==) is a privacy concern."
+  },
+
+  "provider_categories": {
+    "doc_id": "admin-assigned auto id; id field mirrors doc id (doc(id).get() used).",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false, "shape": "mirrors doc id"},
+      "title": {"type": "string", "queried": false, "ordered": false},
+      "image": {"type": "string", "queried": false, "ordered": false, "shape": "image URL, may be empty"},
+      "publish": {"type": "bool", "queried": true, "ordered": false},
+      "sectionId": {"type": "string", "queried": true, "ordered": false},
+      "level": {"type": "int", "queried": true, "ordered": false, "shape": "0 = top-level category; >0 = sub-category (referenced by providers_services.subCategoryId)"}
+    },
+    "where_ops": [["sectionId", "=="], ["publish", "=="], ["level", "=="]],
+    "order_by": [],
+    "pagination": "limit(7) on ondemand home",
+    "geo": false,
+    "writes": "read-only from web (data comes from an admin panel we must build).",
+    "access": "public-read (publish==true).",
+    "notes": "No parent link is read on web; sub-categories presumably carry a parent id (e.g. parentCategoryId) in the admin data — add a nullable parent_id column. level is compared to number 0 so must be numeric."
+  },
+
+  "providers_coupons": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id (coupondata.id posted as coupon_id).",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "code": {"type": "string", "queried": true, "ordered": false},
+      "discount": {"type": "string", "queried": false, "ordered": false, "shape": "number or numeric string (parseFloat'd); face value"},
+      "discountType": {"type": "string", "queried": false, "ordered": false, "shape": "'Percentage' (also 'Percent' accepted) | 'Fix'/'Fixed'"},
+      "description": {"type": "string", "queried": false, "ordered": false},
+      "image": {"type": "string", "queried": false, "ordered": false},
+      "expiresAt": {"type": "timestamp", "queried": true, "ordered": true},
+      "isEnabled": {"type": "bool", "queried": true, "ordered": false},
+      "isPublic": {"type": "bool", "queried": true, "ordered": false},
+      "sectionId": {"type": "string", "queried": true, "ordered": false},
+      "providerId": {"type": "string", "queried": true, "ordered": false, "shape": "FK users.id (provider); coupon only valid for that provider's services"}
+    },
+    "where_ops": [
+      ["isEnabled", "=="], ["isPublic", "=="], ["sectionId", "=="], ["providerId", "=="], ["code", "=="], ["expiresAt", ">"], ["expiresAt", ">="]
+    ],
+    "order_by": [
+      {"field": "expiresAt", "direction": "asc", "where": "home_page/ondemand_home.blade.php:125 (startAt(new Date()).limit(4)); offers/offers.blade.php:37 (startAt + limit(10) + startAfter pagination); ondemand_checkout.blade.php:541; service_charge/pay_service_charge.blade.php:475"}
+    ],
+    "pagination": "limit(4) home; limit(10)+startAfter on offers page",
+    "geo": false,
+    "writes": "read-only from web (admin/provider panel).",
+    "access": "public-read for isEnabled && isPublic && expiresAt>now; non-public coupons must be validated server-side by code (never listed).",
+    "security": "Coupon validation is client-side: pay_service_charge.blade.php:557 looks up by sectionId+code only (no isEnabled/expiresAt check) and the browser posts discount/discountType to the server (apply-service-coupon / apply-service-charge-coupon). Server must re-validate code, expiry, enabled, providerId and compute the discount.",
+    "notes": "vendorID is read on offers page for the generic coupons collection only (not this one). discountType vocabulary inconsistent ('Percentage' vs 'Percent'). No usage-limit / per-user fields are read on web."
+  },
+
+  "parcel_orders": {
+    "doc_id": "PHP uniqid() rendered into the page (13 hex chars, e.g. '66f1c2a9b3e4d') — parcel/parcel_checkout.blade.php:412 and parcel/success.blade.php:48; doc(id).set(), also stored in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false},
+      "adminCommission": {"type": "string", "queried": false, "ordered": false, "shape": "numeric string from hidden input"},
+      "adminCommissionType": {"type": "string", "queried": false, "ordered": false},
+      "author": {"type": "map", "queried": true, "ordered": false, "shape": "full customer users doc snapshot (incl. g/coordinates/createdAt — nothing stripped). Queried on author.id; reads author.firstName, author.profilePictureURL"},
+      "authorID": {"type": "string", "queried": true, "ordered": false, "shape": "owner users.id"},
+      "createdAt": {"type": "timestamp", "queried": false, "ordered": true, "shape": "browser new Date() in direct checkout; serverTimestamp() in gateway success path"},
+      "discount": {"type": "string", "queried": false, "ordered": false, "shape": "discount amount string ('0' when none), number_format()ted by PHP"},
+      "discountType": {"type": "string", "queried": false, "ordered": false, "shape": "null | 'Percentage' | 'Fix'"},
+      "discountLabel": {"type": "string", "queried": false, "ordered": false, "shape": "null | coupon face value"},
+      "couponId": {"type": "string", "queried": false, "ordered": false, "shape": "null | parcel_coupons.id"},
+      "distance": {"type": "string", "queried": false, "ordered": false, "shape": "km as string (server-computed route distance, round-tripped via hidden input)"},
+      "isSchedule": {"type": "bool", "queried": false, "ordered": false},
+      "note": {"type": "string", "queried": false, "ordered": false, "shape": "sender note (form field senderNote)"},
+      "receiverNote": {"type": "string", "queried": false, "ordered": false},
+      "parcelWeight": {"type": "string", "queried": false, "ordered": false, "shape": "parcel_weight.title (NAME, not id)"},
+      "parcelWeightCharge": {"type": "string", "queried": false, "ordered": false, "shape": "parcel_weight.delivery_charge (per-km rate) as string"},
+      "paymentCollectByReceiver": {"type": "bool", "queried": false, "ordered": false},
+      "payment_method": {"type": "string", "queried": false, "ordered": false, "shape": "'cod'|'wallet'|gateway name|'' when receiver pays"},
+      "receiver": {"type": "map", "queried": false, "ordered": false, "shape": "{address:string, name:string, phone:string '(+CC) number'}"},
+      "receiverLatLong": {"type": "map", "queried": false, "ordered": false, "shape": "{latitude:float, longitude:float}"},
+      "receiverPickupDateTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "defaults to createdAt when empty"},
+      "sender": {"type": "map", "queried": false, "ordered": false, "shape": "{address:string, name:string, phone:string '(+CC) number'}"},
+      "senderLatLong": {"type": "map", "queried": false, "ordered": false, "shape": "{latitude:float, longitude:float}"},
+      "senderPickupDateTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "scheduled pickup; defaults to createdAt"},
+      "status": {"type": "string", "queried": false, "ordered": false, "shape": "'Order Placed'|'Order Accepted'|'Driver Pending'|'Driver Accepted'|'Order Shipped'|'In Transit'|'Order Completed'|'Order Cancelled'|'Driver Rejected'|'Order Rejected'"},
+      "subTotal": {"type": "string", "queried": false, "ordered": false, "shape": "round(km * delivery_charge) computed in ParcelController, round-tripped as string"},
+      "sectionId": {"type": "string", "queried": false, "ordered": false},
+      "parcelCategoryID": {"type": "string", "queried": false, "ordered": false, "shape": "FK parcel_categories.id (note capital ID)"},
+      "parcelType": {"type": "string", "queried": false, "ordered": false, "shape": "parcel_categories.title copy"},
+      "parcelImages": {"type": "array", "queried": false, "ordered": false, "shape": "array<string> Firebase Storage URLs uploaded from browser"},
+      "taxSetting": {"type": "array", "queried": false, "ordered": false, "shape": "array<{country, enable:bool, id, tax, title, type}>"},
+      "driverId": {"type": "string", "queried": false, "ordered": false, "shape": "null at create; set by driver app"},
+      "driver": {"type": "map", "queried": false, "ordered": false, "shape": "READ-ONLY on web, set by driver app: users snapshot {id, firstName, lastName, email, profilePictureURL, ...}"},
+      "rejectedByDrivers": {"type": "array", "queried": false, "ordered": false, "shape": "null at create; array<string driverId> maintained by driver app/dispatcher"},
+      "sourcePoint": {"type": "map", "queried": false, "ordered": false, "shape": "{geohash:string(9), geopoint:geopoint} of sender — used by driver app geo dispatch"},
+      "destinationPoint": {"type": "map", "queried": false, "ordered": false, "shape": "{geohash:string(9), geopoint:geopoint} of receiver"},
+      "senderZoneId": {"type": "string", "queried": false, "ordered": false, "shape": "FK zone.id"},
+      "receiverZoneId": {"type": "string", "queried": false, "ordered": false, "shape": "FK zone.id"},
+      "reviewsCount": {"type": "int", "queried": false, "ordered": false, "shape": "written by customer review flow on the ORDER doc"},
+      "reviewsSum": {"type": "float", "queried": false, "ordered": false},
+      "vendorID": {"type": "string", "queried": false, "ordered": false, "shape": "READ but NEVER WRITTEN (dead copy-paste from food orders, parcel_orders.blade.php:260)"}
+    },
+    "where_ops": [["authorID", "=="], ["id", "=="], ["author.id", "=="]],
+    "order_by": [
+      {"field": "createdAt", "direction": "desc", "where": "parcel/parcel_orders.blade.php:152 (authorID== orderBy createdAt desc)"}
+    ],
+    "pagination": "none",
+    "realtime": "onSnapshot where('author.id','==',cuser_id) at layouts/footer.blade.php:1911 for status-change notifications.",
+    "geo": true,
+    "geo_usage": "No GeoFirestore near() on web, but each order stores sourcePoint/destinationPoint {geohash, geopoint} (GeoFirestore-style) for driver-side proximity dispatch; store lat/lng + geohash columns.",
+    "writes": "CLIENT CREATES: set() at parcel/parcel_checkout.blade.php:1554 (cod/wallet/receiver-pays) and parcel/success.blade.php:132 (after gateway). CLIENT UPDATES: {reviewsCount, reviewsSum} at parcel/parcel_orders.blade.php:796 and :854. Same pages also write users.wallet_amount, wallet, users(driver).reviewsCount/Sum and items_review from the browser.",
+    "access": "owner (authorID) read; driver (driverId) read/update status from driver app; all creation should go through a server endpoint.",
+    "security": "HIGH: entire order incl. subTotal, discount, adminCommission, payment_method is assembled in the browser from hidden inputs; wallet deduction done client-side (balance check only in JS); paymentCollectByReceiver chosen by browser. Coupon lookup by code doesn't check sectionId. parcelImages uploaded straight to Firebase Storage from browser.",
+    "notes": "Two creation paths produce slightly different docs: success.blade.php path gets lat/lng as STRINGS into GeoPoint (may throw) and uses serverTimestamp, checkout path uses browser Date. parcelWeight stores the weight NAME, not the parcel_weight id (senderParcelWeight id is dropped). Field naming inconsistent: parcelCategoryID vs sectionId vs senderZoneId; note vs receiverNote. Numbers stored as strings (distance, subTotal, parcelWeightCharge, discount, adminCommission). driver map/driverId/rejectedByDrivers come from driver app."
+  },
+
+  "parcel_coupons": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "code": {"type": "string", "queried": true, "ordered": false},
+      "discount": {"type": "string", "queried": false, "ordered": false, "shape": "number or numeric string"},
+      "discountType": {"type": "string", "queried": false, "ordered": false, "shape": "'Percentage'|'Percent'|'Fix'"},
+      "description": {"type": "string", "queried": false, "ordered": false},
+      "image": {"type": "string", "queried": false, "ordered": false},
+      "expiresAt": {"type": "timestamp", "queried": true, "ordered": true},
+      "isEnabled": {"type": "bool", "queried": true, "ordered": false},
+      "sectionId": {"type": "string", "queried": true, "ordered": false},
+      "isPublic": {"type": "bool", "queried": false, "ordered": false, "shape": "probably present in admin data but NOT filtered on web for parcel coupons"}
+    },
+    "where_ops": [["isEnabled", "=="], ["expiresAt", ">"], ["expiresAt", ">="], ["sectionId", "=="], ["code", "=="]],
+    "order_by": [
+      {"field": "expiresAt", "direction": "asc", "where": "offers/offers.blade.php:35 (startAt(new Date()), limit(10), startAfter)"}
+    ],
+    "geo": false,
+    "writes": "read-only from web (admin panel).",
+    "access": "public-read for isEnabled && expiresAt>now.",
+    "security": "Apply-by-code (parcel_checkout.blade.php:683) filters code+isEnabled+expiresAt but NOT sectionId; discount/discountType/coupon_id posted from browser to apply_parcel_coupon — server must recompute.",
+    "notes": "Offers page does not filter by sectionId for parcel coupons; checkout list filters sectionId+expiresAt and checks isEnabled client-side. isPublic is not used here (unlike providers_coupons)."
+  },
+
+  "parcel_categories": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id (where('id','==',id)).",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false},
+      "title": {"type": "string", "queried": false, "ordered": false},
+      "image": {"type": "string", "queried": false, "ordered": false},
+      "sectionId": {"type": "string", "queried": true, "ordered": false},
+      "publish": {"type": "bool", "queried": true, "ordered": false},
+      "set_order": {"type": "int", "queried": false, "ordered": true, "shape": "display sort order"}
+    },
+    "where_ops": [["sectionId", "=="], ["publish", "=="], ["id", "=="]],
+    "order_by": [
+      {"field": "set_order", "direction": "asc", "where": "home_page/parcel_home.blade.php:205"}
+    ],
+    "geo": false,
+    "writes": "read-only from web (admin panel).",
+    "access": "public-read (publish==true).",
+    "notes": "parcel_orders.blade.php:153 builds a ref to the whole collection but never uses it. Title is copied into parcel_orders.parcelType."
+  },
+
+  "parcel_weight": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "title": {"type": "string", "queried": false, "ordered": false, "shape": "e.g. '0-5 kg'"},
+      "delivery_charge": {"type": "string", "queried": false, "ordered": false, "shape": "per-km rate; ParcelController multiplies km * delivery_charge (number or numeric string)"}
+    },
+    "where_ops": [],
+    "order_by": [],
+    "geo": false,
+    "writes": "read-only from web (admin panel). Whole collection fetched unfiltered (parcel/parcel.blade.php:292).",
+    "access": "public-read.",
+    "security": "delivery_charge is put in an <option delivery_charge=...> attribute and POSTed back to parcel_cart; ParcelController trusts the posted rate — server must look up the rate by weight id.",
+    "notes": "No sectionId / publish / sort field read; list order is Firestore default (doc id). Consider adding sort_order and active columns."
+  },
+
+  "rental_orders": {
+    "doc_id": "client-generated Firestore auto id: database.collection('temp').doc().id (rental/rental_checkout.blade.php:23); doc(id).set(), duplicated in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false},
+      "adminCommission": {"type": "string", "queried": false, "ordered": false},
+      "adminCommissionType": {"type": "string", "queried": false, "ordered": false, "shape": "'Fixed'|'Percentage' (case varies)"},
+      "author": {"type": "map", "queried": true, "ordered": false, "shape": "full customer users doc snapshot (nothing stripped); reads author.firstName, author.profilePictureURL; queried on author.id"},
+      "authorID": {"type": "string", "queried": true, "ordered": false, "shape": "owner users.id"},
+      "bookingDateTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "requested pickup date/time"},
+      "couponId": {"type": "string", "queried": false, "ordered": false, "shape": "'' | rental_coupons.id"},
+      "createdAt": {"type": "timestamp", "queried": false, "ordered": true, "shape": "serverTimestamp()"},
+      "discount": {"type": "string", "queried": false, "ordered": false, "shape": "amount as string"},
+      "discountLabel": {"type": "string", "queried": false, "ordered": false},
+      "discountType": {"type": "string", "queried": false, "ordered": false},
+      "driverId": {"type": "string", "queried": false, "ordered": false, "shape": "null at create; set by driver app"},
+      "driver": {"type": "map", "queried": false, "ordered": false, "shape": "READ-ONLY on web, set by driver app: driver users snapshot {id, firstName, lastName, email, phoneNumber, profilePictureURL, carName, carNumber, reviewsCount, reviewsSum, ...}"},
+      "endKitoMetersReading": {"type": "string", "queried": false, "ordered": false, "shape": "null at create; odometer at end set by driver app (typo 'Kito' is the real key)"},
+      "startKitoMetersReading": {"type": "string", "queried": false, "ordered": false, "shape": "null at create; odometer at start"},
+      "endTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "null at create; set by driver app"},
+      "startTime": {"type": "timestamp", "queried": false, "ordered": false, "shape": "null at create; set by driver app"},
+      "otpCode": {"type": "string", "queried": false, "ordered": false, "shape": "4-digit string generated by PHP rand() into page source"},
+      "paymentMethod": {"type": "string", "queried": false, "ordered": false, "shape": "camelCase here (vs payment_method in other orders): 'cod'|'wallet'|gateway name"},
+      "paymentStatus": {"type": "bool", "queried": false, "ordered": false, "shape": "false at create; set true by browser after payment at trip end"},
+      "rentalPackageModel": {"type": "map", "queried": false, "ordered": false, "shape": "full rental_packages doc round-tripped through jQuery POST/session (so values are STRINGS except published:bool, createdAt:timestamp rebuilt): {id, name, description, baseFare, includedHours, includedDistance, extraKmFare, extraMinuteFare, vehicleTypeId, published, createdAt, ...}"},
+      "rentalVehicleType": {"type": "map", "queried": false, "ordered": false, "shape": "full rental_vehicle_type doc round-tripped as strings (isActive rebuilt to bool): {id, name, description, short_description, rental_vehicle_icon, isActive, sectionId, ...}"},
+      "rejectedByDrivers": {"type": "array", "queried": false, "ordered": false, "shape": "null at create; array<string> driver ids"},
+      "sectionId": {"type": "string", "queried": false, "ordered": false},
+      "sourceLocation": {"type": "map", "queried": false, "ordered": false, "shape": "{latitude:float, longitude:float}"},
+      "sourceLocationName": {"type": "string", "queried": false, "ordered": false},
+      "sourcePoint": {"type": "map", "queried": false, "ordered": false, "shape": "{geohash:string(9), geopoint:geopoint} for driver dispatch"},
+      "status": {"type": "string", "queried": false, "ordered": false, "shape": "'Order Placed'|'Order Accepted'|'Driver Pending'|'Driver Accepted'|'Order Shipped'|'In Transit'|'Order Completed'|'Order Cancelled'|'Driver Rejected'|'Order Rejected'"},
+      "subTotal": {"type": "string", "queried": false, "ordered": false, "shape": "package baseFare (string)"},
+      "taxSetting": {"type": "array", "queried": false, "ordered": false, "shape": "array<{country, enable:bool, id, tax, title, type}>"},
+      "vehicleId": {"type": "string", "queried": false, "ordered": false, "shape": "MISNAMED: actually rental_vehicle_type.id (vehicleTypeId)"},
+      "zoneId": {"type": "string", "queried": false, "ordered": false, "shape": "FK zone.id"},
+      "reviewsCount": {"type": "int", "queried": false, "ordered": false, "shape": "written by customer review flow on the ORDER doc"},
+      "reviewsSum": {"type": "float", "queried": false, "ordered": false}
+    },
+    "where_ops": [["authorID", "=="], ["id", "=="], ["author.id", "=="]],
+    "order_by": [
+      {"field": "createdAt", "direction": "desc", "where": "rental/rental_orders.blade.php:130 (authorID== orderBy createdAt desc)"}
+    ],
+    "pagination": "none",
+    "realtime": "onSnapshot where('author.id','==',cuser_id) at layouts/footer.blade.php:1940.",
+    "geo": true,
+    "geo_usage": "No near() on web; stores sourcePoint {geohash, geopoint} for driver-side dispatch.",
+    "writes": "CLIENT CREATES: set() at rental/rental_checkout.blade.php:430. CLIENT UPDATES: {paymentMethod, paymentStatus:true} at rental/rental_orders_detail.blade.php:1232 (wallet) and :1264 (cod/other) and rental/success.blade.php:59 (after gateway); {status:'Order Cancelled'} at rental/rental_orders.blade.php:949; {reviewsCount, reviewsSum} at rental_orders.blade.php:279/:334 and rental_orders_detail.blade.php:824/:879.",
+    "access": "owner (authorID) read + cancel (only while 'Order Placed'); driver (driverId) updates trip fields from driver app; payment and amounts server-only.",
+    "security": "CRITICAL: browser sets paymentStatus=true directly (rental_orders_detail.blade.php:1264 for non-wallet/non-gateway methods marks paid with no payment at all). Final trip total (extra km / extra minute fares, tax, discount) is computed in browser (rental_orders_detail.blade.php:553-666) and used for wallet debit. Cancel has no status guard. Package/vehicle data posted back from browser to find_rental_cars and embedded verbatim — a user can tamper baseFare/extra fares.",
+    "notes": "Uses paymentMethod (camelCase) whereas provider/parcel orders use payment_method. vehicleId holds a vehicle TYPE id. 'Kito' typo in odometer keys. Embedded rentalPackageModel/rentalVehicleType numeric values are strings after the session round-trip. rentalVehicleType.description is read but home page lists short_description — both may exist. No drop-off location stored despite isDropSameLocation UI."
+  },
+
+  "rental_coupons": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "code": {"type": "string", "queried": true, "ordered": false},
+      "discount": {"type": "string", "queried": false, "ordered": false, "shape": "number or numeric string"},
+      "discountType": {"type": "string", "queried": false, "ordered": false, "shape": "'Percentage'|'Percent'|'Fix'"},
+      "description": {"type": "string", "queried": false, "ordered": false},
+      "image": {"type": "string", "queried": false, "ordered": false},
+      "expiresAt": {"type": "timestamp", "queried": true, "ordered": true},
+      "isEnabled": {"type": "bool", "queried": true, "ordered": false},
+      "sectionId": {"type": "string", "queried": true, "ordered": false},
+      "isPublic": {"type": "bool", "queried": false, "ordered": false, "shape": "likely present in admin data; not filtered on web"}
+    },
+    "where_ops": [["isEnabled", "=="], ["expiresAt", ">"], ["expiresAt", ">="], ["sectionId", "=="], ["code", "=="]],
+    "order_by": [
+      {"field": "expiresAt", "direction": "asc", "where": "offers/offers.blade.php:33 (startAt(new Date()), limit(10), startAfter)"}
+    ],
+    "geo": false,
+    "writes": "read-only from web (admin panel).",
+    "access": "public-read for isEnabled && expiresAt>now.",
+    "security": "Apply-by-code (rental_checkout.blade.php:268) ignores sectionId; browser posts discount/discountType/coupon_id to apply_rental_coupon — server must re-validate and compute.",
+    "notes": "Same shape as parcel_coupons. Offers page does not filter by sectionId."
+  },
+
+  "rental_vehicle_type": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "name": {"type": "string", "queried": false, "ordered": false},
+      "short_description": {"type": "string", "queried": false, "ordered": false, "shape": "shown in dropdown"},
+      "description": {"type": "string", "queried": false, "ordered": false, "shape": "read from the copy embedded in rental_orders.rentalVehicleType"},
+      "rental_vehicle_icon": {"type": "string", "queried": false, "ordered": false, "shape": "image URL"},
+      "isActive": {"type": "bool", "queried": true, "ordered": false},
+      "sectionId": {"type": "string", "queried": true, "ordered": false}
+    },
+    "where_ops": [["sectionId", "=="], ["isActive", "=="]],
+    "order_by": [],
+    "geo": false,
+    "writes": "read-only from web (admin panel). Whole doc is JSON.stringify'd into an <option data-vehicle> and embedded in rental_orders.rentalVehicleType.",
+    "access": "public-read (isActive==true).",
+    "notes": "Because the entire document is embedded into orders, any extra admin-side fields (e.g. capacity, createdAt) also flow into orders — check the admin panel's full field list. snake_case (short_description, rental_vehicle_icon) mixed with camelCase (isActive, sectionId)."
+  },
+
+  "rental_packages": {
+    "doc_id": "admin-assigned auto id; `id` field mirrors doc id.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "name": {"type": "string", "queried": false, "ordered": false},
+      "description": {"type": "string", "queried": false, "ordered": false},
+      "baseFare": {"type": "float", "queried": false, "ordered": false, "shape": "parseFloat'd; may be numeric string"},
+      "includedHours": {"type": "float", "queried": false, "ordered": false, "shape": "hours included (x60 for minutes)"},
+      "includedDistance": {"type": "float", "queried": false, "ordered": false, "shape": "km included"},
+      "extraKmFare": {"type": "float", "queried": false, "ordered": false},
+      "extraMinuteFare": {"type": "float", "queried": false, "ordered": false},
+      "vehicleTypeId": {"type": "string", "queried": true, "ordered": false, "shape": "FK rental_vehicle_type.id"},
+      "published": {"type": "bool", "queried": true, "ordered": false},
+      "createdAt": {"type": "timestamp", "queried": false, "ordered": false, "shape": "rebuilt from {seconds, nanoseconds} when embedded into order"}
+    },
+    "where_ops": [["vehicleTypeId", "=="], ["published", "=="]],
+    "order_by": [],
+    "geo": false,
+    "writes": "read-only from web (admin panel). Whole doc embedded in rental_orders.rentalPackageModel.",
+    "access": "public-read (published==true).",
+    "security": "baseFare and fares go browser -> find_rental_cars -> session -> order; server must re-read package by id.",
+    "notes": "Uses `published` while sibling collections use `publish`/`isActive`. No sectionId/zone field read (scoped via vehicleTypeId). Any extra admin-side fields flow into orders via the embed."
+  }
+}

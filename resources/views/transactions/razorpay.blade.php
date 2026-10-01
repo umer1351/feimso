@@ -49,7 +49,6 @@
 @include('layouts.footer')
 @include('layouts.nav')
 <script src="{{ asset('js/geofirestore.js') }}"></script>
-<script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
 <script type="text/javascript">
 window.onload = function() {
     var firestore = firebase.firestore();

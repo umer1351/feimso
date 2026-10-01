@@ -1,0 +1,233 @@
+{
+  "users": {
+    "doc_id": "Firebase Auth uid (userCredential.user.uid for email/password and phone-OTP signup; Google signup passes the uid through the URL as ?uuid= and writes doc(uuid)). The doc also stores the same value in field `id`, and almost every read uses where('id','==',uid) instead of doc(uid).get(). Laravel session `user_uuid` / VendorUsers.uuid (MySQL vendor_users) hold this uid.",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false, "shape": "Duplicate of doc id (auth uid). Primary lookup key: where('id','==',x) in ~60 places."},
+      "email": {"type": "string", "queried": true, "ordered": false, "shape": "Login and duplicate check: where('email','==') (loginuser.blade.php:161, signup.blade.php:170), plus where('email','==').where('role','==','customer') (forgot_password.blade.php:75). For phone-OTP signups it may be whatever was typed or empty."},
+      "firstName": {"type": "string", "queried": false, "ordered": false},
+      "lastName": {"type": "string", "queried": false, "ordered": false},
+      "phoneNumber": {"type": "string", "queried": true, "ordered": false, "shape": "Stored WITHOUT the country code (the raw #mobileNumber input). Queried as where('role','==','customer').where('phoneNumber','==') (signup.blade.php:176/515, loginuser.blade.php:228/255)."},
+      "countryCode": {"type": "string", "queried": false, "ordered": false, "shape": "Dial code with a leading '+', e.g. '+92'. profile.blade.php strips the '+' to preselect the dropdown."},
+      "role": {"type": "string", "queried": true, "ordered": false, "shape": "enum: 'customer' | 'vendor' | 'provider' | 'driver'. Web signup writes 'customer'. Queried == 'customer' (login/signup/forgot) and == 'provider' (servicesList, ondemand-search, footer.blade.php:187 paging)."},
+      "active": {"type": "bool", "queried": true, "ordered": false, "shape": "Login is refused unless role=='customer' && active==true. Queried in where('role','==','provider').where('active','==',true) (servicesList.blade.php:113, ondemand_home.blade.php:130)."},
+      "profilePictureURL": {"type": "string", "queried": false, "ordered": false, "shape": "URL in Firebase Storage under 'images/'; '' when not set."},
+      "createdAt": {"type": "timestamp", "queried": false, "ordered": false, "shape": "serverTimestamp() at signup."},
+      "coordinates": {"type": "geopoint", "queried": false, "ordered": false, "shape": "Signup always writes GeoPoint(0,0). Deleted from the copy before embedding (ondemand_checkout.blade.php:1325-1327)."},
+      "g": {"type": "map", "queried": false, "ordered": false, "shape": "GeoFirestore index {geohash: string, geopoint: geopoint}, built from `coordinates`. Only written when signup goes through geoFirestore.collection('users').doc(uuid).set (email/password path signup.blade.php:254 and phone path :583). The Google path (:209) uses plain database.set, so it has no `g`."},
+      "wallet_amount": {"type": "float", "queried": false, "ordered": false, "shape": "Running wallet balance. Usually a number, but transactions/success.blade.php:80 writes it as a STRING (final_wallet_balance.toString()). Readers guard with isNaN/parseFloat, but rental_checkout.blade.php:336 and parcel_checkout call .toFixed() directly and will throw on a string."},
+      "shippingAddress": {"type": "array", "queried": false, "ordered": false, "shape": "Canonical form (delivery_address/index.blade.php:219-350): array of {id: string (tmp auto-id), address: string (flat/house), addressAs: string enum 'Home'|'Work'|'Hotel'|'Other', isDefault: bool (exactly one true, and the first address added is true), landmark: string, locality: string (full formatted address), location: map {latitude: float, longitude: float} (a plain map, NOT a GeoPoint)}. LEGACY/CONFLICTING form: layouts/footer.blade.php:1398-1450 treats it as a single MAP {line1, line2, city, country, postalCode} and writes that map back, overwriting the array. footer.blade.php:1554 also reads shippingAddress.city. Checkout matches an entry by the sessionStorage addressId, otherwise by isDefault, and the whole entry is copied into orders."},
+      "fcmToken": {"type": "string", "queried": false, "ordered": false, "shape": "Push token, read for vendors, providers and customers (checkout.blade.php:1392, accepted_booking.blade.php:522, rental_checkout.blade.php:358). The web never writes it; the mobile apps do."},
+      "vendorID": {"type": "string", "queried": true, "ordered": false, "shape": "Only on vendor-role users: id of the vendor/store document. uservendorDetailsRef.where('vendorID','==',x) (checkout.blade.php:1392, checkout/success.blade.php:97, dinein/dyiningvendor.blade.php:382)."},
+      "reviewsCount": {"type": "float", "queried": false, "ordered": false, "shape": "Rating count for provider/driver users. Compared against the string \"0.0\" in places, so the apps may store it as a double or a string. The web rewrites it from the customer browser (completed_booking.blade.php:713, parcel_orders.blade.php:811/873, rental_orders.blade.php:300/353, rental_orders_detail.blade.php:845/898)."},
+      "reviewsSum": {"type": "float", "queried": false, "ordered": false, "shape": "Sum of ratings; rating = reviewsSum/reviewsCount. Same write sites as reviewsCount."},
+      "subscriptionTotalOrders": {"type": "int", "queried": false, "ordered": false, "shape": "Remaining-orders counter for provider/vendor subscription plans; '-1' means unlimited. Read with parseInt; 0 marks the provider invalid (footer.blade.php:226,318). Incremented from the CUSTOMER browser on booking cancel (accepted_booking.blade.php:589-598)."},
+      "subscriptionPlanId": {"type": "string", "queried": false, "ordered": false, "shape": "Provider/vendor plan id; empty or null makes the provider invalid when the subscription or commission model is on (footer.blade.php:217)."},
+      "subscriptionExpiryDate": {"type": "timestamp", "queried": false, "ordered": false, "shape": "Read as .seconds*1000 (footer.blade.php:221,326)."},
+      "subscription_plan": {"type": "map", "queried": false, "ordered": false, "shape": "Embedded copy of the subscription plan; the web reads {orderLimit: int|string ('-1' = unlimited), itemLimit: int|string ('-1' = unlimited)}. Other plan keys are written by the admin/app and are opaque here, so keep the whole map as JSON."},
+      "adminCommission": {"type": "map", "queried": false, "ordered": false, "shape": "Per-provider commission override {commission: number|string, type: string 'fixed'|'percentage'}; falls back to sections.adminCommision (ondemand_checkout.blade.php:375-379). Note the spelling: this users field is 'adminCommission', the sections field is 'adminCommision'."},
+      "carNumber": {"type": "string", "queried": false, "ordered": false, "shape": "Driver-role users only. The web never reads it from users directly, only from embedded order.driver snapshots (my_order/*.blade.php, rental_checkout.blade.php:505). Written by the driver app."},
+      "carName": {"type": "string", "queried": false, "ordered": false, "shape": "Driver-role users only, read via the embedded driver snapshot (rental_checkout.blade.php:504, rental_orders_detail.blade.php:1302)."}
+    },
+    "where_ops": [
+      ["id", "=="],
+      ["email", "=="],
+      ["email", "==", "+ role =="],
+      ["role", "=="],
+      ["phoneNumber", "=="],
+      ["active", "=="],
+      ["vendorID", "=="]
+    ],
+    "order_by": [],
+    "pagination": "footer.blade.php:187/199 pages where('role','==','provider').limit(BATCH_SIZE).startAfter(lastDoc) with no orderBy, which is implicit doc-id order, so MySQL should page by id. No onSnapshot on users.",
+    "geo": true,
+    "writes": "set at signup: signup.blade.php:209 (plain set, Google), :254 and :583 (geoFirestore.set, which adds g). update from the browser: profile.blade.php:327 {firstName,lastName,email,phoneNumber,countryCode,profilePictureURL,role:'customer',active}; shippingAddress at delivery_address/index.blade.php:259,275,330,349 and footer.blade.php:1448; wallet_amount at checkout.blade.php:2976, parcel_checkout.blade.php:1603, ondemand_checkout.blade.php:2261, rental_orders_detail.blade.php:1237, pay_extra_charge.blade.php:1529, pay_service_charge.blade.php:1891/1925/1943, service_charge/success.blade.php:77, accepted_booking.blade.php:611/645, pending_booking.blade.php:565, my_giftcard.blade.php:376, transactions/success.blade.php:79; subscriptionTotalOrders at accepted_booking.blade.php:596; reviewsCount/reviewsSum on OTHER users (providers/drivers) at completed_booking.blade.php:713, parcel_orders.blade.php:811/873, rental_orders.blade.php:300/353, rental_orders_detail.blade.php:845/898. No deletes.",
+    "access": "mixed. Owner (owner field = id/doc id) may read their own doc and update only firstName, lastName, phoneNumber, countryCode, profilePictureURL, shippingAddress. Public read (a projection: id, firstName, lastName, profilePictureURL, reviewsCount, reviewsSum, role, active, plus email/phoneNumber for providers, which providerDetail and favouritesProvider display) is needed for provider/driver/vendor cards. SECURITY: (1) wallet_amount is computed and written by the browser everywhere, both the customer's own balance (debit on wallet checkout, credit on top-up and gift redemption, refunds) and OTHER users' balances (provider credit/debit in pay_service_charge, service_charge/success, accepted_booking.updateProviderWallet). Move all of it server-side, transactional with the wallet ledger. (2) reviewsCount/reviewsSum and subscriptionTotalOrders of OTHER users are written from the customer's browser, so the server must derive them. (3) profile.blade.php:327 writes role:'customer' and active from the client. `.user_active` does not exist in profile.blade.php, so active=false is written on EVERY profile save, which effectively disables the account at next login (login requires active==true). Never accept role/active from the client. (4) email is updated in Firestore without changing the Firebase Auth email. (5) The whole user doc (with wallet_amount) is JSON-posted as `author` to the payment controllers, and TransactionController uses that client-supplied wallet_amount to compute the new balance (transactions/success.blade.php:77).",
+    "notes": "phoneNumber has no country code while countryCode is separate, so uniqueness checks only compare the local part. users is also the provider/driver/vendor table: role-specific fields (vendorID, subscription*, adminCommission, reviews*, car*, fcmToken) are written by admin/mobile apps and only read here, so expect more app-only fields in production data (e.g. a driver's location, isActive, zoneId). Dump real docs before finalizing. shippingAddress has two incompatible shapes (array vs footer map). wallet_amount is mixed number/string. The doc is embedded wholesale into orders as author/driver (after deleting g, createdAt, coordinates), so other collections hold stale copies. ondemand_home.blade.php:130 defines a geoFirestore provider query that is never executed. Name clash: the Laravel MySQL `users` table (App\\Models\\User: name, email, password) already exists and auth uses `vendor_users` (uuid = Firestore uid), so pick a distinct table name or merge deliberately. Google signup writes no `g`. Typo dependencies: users.adminCommission vs sections.adminCommision."
+  },
+
+  "wallet": {
+    "doc_id": "Client-generated Firestore auto-id via database.collection('tmp').doc().id in most places; transactions/success.blade.php:86 uses PHP uniqid() rendered into the page. The value is duplicated in field `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false, "shape": "Same as doc id."},
+      "user_id": {"type": "string", "queried": true, "ordered": false, "shape": "users.id of the account whose wallet moved (customer or provider)."},
+      "amount": {"type": "float", "queried": false, "ordered": false, "shape": "Usually a number, but STRING in transactions/success.blade.php:88 (amount.toString()) and pay_service_charge.blade.php:1869 (total_pay.toString()), and a PHP-round-tripped string for gift redemption (my_giftcard.blade.php:360 data.price). Always positive; direction comes from isTopUp."},
+      "date": {"type": "timestamp", "queried": false, "ordered": true, "shape": "serverTimestamp() (sometimes via a shared createdAt var)."},
+      "isTopUp": {"type": "bool", "queried": false, "ordered": false, "shape": "true = credit (green), false = debit (red)."},
+      "order_id": {"type": "string", "queried": false, "ordered": false, "shape": "Related order/booking id; '' for top-ups and gift redemption. Absent on the transactions/success top-up."},
+      "payment_method": {"type": "string", "queried": false, "ordered": false, "shape": "'Wallet' | 'Gift Voucher' | a gateway name for top-ups (razorpay, stripe, paypal, ...)."},
+      "payment_status": {"type": "string", "queried": false, "ordered": false, "shape": "Always 'success' from web."},
+      "serviceType": {"type": "string", "queried": false, "ordered": false, "shape": "'' (store orders, checkout.blade.php:2998) | 'parcel-service' | 'ondemand-service' | 'rental-service'. Absent on top-up and gift rows."},
+      "transactionUser": {"type": "string", "queried": false, "ordered": false, "shape": "'user' | 'customer' | 'provider'. Absent on many writes (checkout, parcel, rental, ondemand_checkout, pay_service_charge customer debit)."},
+      "note": {"type": "string", "queried": false, "ordered": false, "shape": "Free text, e.g. 'Wallet Topup', 'Booking Amount Refund', 'Order Amount debited', 'Admin commission refund', 'Admin Commission debit', 'Booking Amount', 'Extra Booking Payment', 'Extra Charge Amount Credited'. Optional."},
+      "transactionId": {"type": "string", "queried": false, "ordered": false, "shape": "Gateway transaction id; only on wallet top-ups (transactions/success.blade.php:95)."}
+    },
+    "where_ops": [["user_id", "=="]],
+    "order_by": [["date", "desc"]],
+    "pagination": "transactions/index.blade.php:196: where user_id == uid, orderBy date desc, limit(10), next = startAfter(lastDoc), prev = startAt(firstDocOfPrevPage). No onSnapshot.",
+    "geo": false,
+    "writes": "set only (append-only ledger), all from the browser: checkout.blade.php:2984, parcel_checkout.blade.php:1605, ondemand_checkout.blade.php:2269, rental_orders_detail.blade.php:1239, gift_card/my_giftcard.blade.php:358, transactions/success.blade.php:87, my_booking/accepted_booking.blade.php:615/650/664/682, my_booking/pending_booking.blade.php:569, providersService/extra_charge/pay_extra_charge.blade.php:1473/1501, extra_charge/success.blade.php:71, service_charge/pay_service_charge.blade.php:1867/1897/1963, service_charge/success.blade.php:79/93. No update/delete.",
+    "access": "owner (user_id) read-only. SECURITY: every ledger row, including credits to the customer's own wallet (top-up, gift redemption, refunds) and credits/debits to PROVIDER wallets (provider earnings, admin-commission debit/refund), is created from the browser with client-chosen amount/user_id. The ledger insert and the users.wallet_amount change must move server-side into one DB transaction, and the browser must never insert rows.",
+    "notes": "amount is mixed number/string, so cast to DECIMAL on import. transactionUser, serviceType, note, order_id and transactionId are inconsistently present, so make them nullable. Rows exist for users of every role (providers too). Several flows write the ledger row and the balance update non-atomically (balance first in some, ledger first in others), so ledger and balance may disagree in existing data."
+  },
+
+  "referral": {
+    "doc_id": "Firebase Auth uid of the new user (same as users.id).",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false, "shape": "Same as doc id / users.id."},
+      "referralCode": {"type": "string", "queried": true, "ordered": false, "shape": "6-digit numeric string generated in the browser: Math.floor(Math.random()*899999+100000).toString(). Uniqueness is NOT checked."},
+      "referralBy": {"type": "string", "queried": false, "ordered": false, "shape": "users.id of the referrer (resolved via where('referralCode','==',code)), or ''."}
+    },
+    "where_ops": [["referralCode", "=="]],
+    "order_by": [],
+    "geo": false,
+    "writes": "set at signup only: auth/signup.blade.php:201 (Google), :248 (email/password), :577 (phone OTP). Read: layouts/footer.blade.php:1533 doc(uid).get() to show 'your referral code'.",
+    "access": "owner (id) for reading their own code. The referralCode lookup must go through a server endpoint that returns only the referrer id. Insert should be server-side at registration (the client currently picks its own referralBy, so a user can set any referrer).",
+    "notes": "1:1 with users and could be merged into users (referral_code UNIQUE, referred_by FK). Random codes can collide, and the lookup takes docs[0]. No referral reward logic on the web; the apps/backend presumably pay out, which is another reason not to trust client-set referralBy."
+  },
+
+  "gift_cards": {
+    "doc_id": "Admin-created (admin panel, not in this repo); field `id` duplicates the doc id.",
+    "fields": {
+      "id": {"type": "string", "queried": true, "ordered": false, "shape": "Same as doc id; queried with where('id','==',giftId) (giftcard.blade.php:977, :2037/:2057 chained on the isEnable filter)."},
+      "isEnable": {"type": "bool", "queried": true, "ordered": false, "shape": "Note the spelling: 'isEnable' (coupons use 'isEnabled')."},
+      "title": {"type": "string", "queried": false, "ordered": false},
+      "image": {"type": "string", "queried": false, "ordered": false, "shape": "Card artwork URL."},
+      "message": {"type": "string", "queried": false, "ordered": false, "shape": "Default message prefilled into the purchase form."},
+      "expiryDay": {"type": "int", "queried": false, "ordered": false, "shape": "Validity in days after purchase. Copied into the purchase JSON and used as parseInt(expiryDay) in gift_card/success.blade.php:61."}
+    },
+    "where_ops": [["isEnable", "=="], ["id", "=="]],
+    "order_by": [],
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read (isEnable=true only); admin-only write.",
+    "notes": "The purchase price is not taken from gift_cards. The amount is typed by the user (#giftAmount) and posted to giftcard.processing, so the face value of a purchased card is whatever the client pays. Fine only if the gateway charges exactly that amount."
+  },
+
+  "gift_purchases": {
+    "doc_id": "Client-generated auto-id: database.collection('tmp').doc().id on the success page (gift_card/success.blade.php:46); stored again in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false, "shape": "Same as doc id."},
+      "giftId": {"type": "string", "queried": false, "ordered": false, "shape": "gift_cards.id."},
+      "giftTitle": {"type": "string", "queried": false, "ordered": false, "shape": "Denormalised gift_cards.title."},
+      "price": {"type": "float", "queried": false, "ordered": false, "shape": "Face value. Arrives as a STRING because it round-trips through a form POST, the PHP session and json_encode. On redemption it is credited to the wallet as-is (string)."},
+      "message": {"type": "string", "queried": false, "ordered": false},
+      "redeem": {"type": "bool", "queried": false, "ordered": false, "shape": "false at purchase; set to true on redemption (my_giftcard.blade.php:355)."},
+      "userid": {"type": "string", "queried": true, "ordered": false, "shape": "Purchaser users.id. Note: 'userid', not 'user_id'."},
+      "giftCode": {"type": "string", "queried": true, "ordered": false, "shape": "Generated in the browser as Date.getTime()+random(100..1098), a NUMBER, but stored as a STRING after the PHP session round trip; redemption queries where('giftCode','==', <input string>). Should be UNIQUE."},
+      "giftPin": {"type": "string", "queried": false, "ordered": false, "shape": "6-digit PIN generated in the browser (Math.random), stored as a string after the round trip. Compared client-side with != against the typed pin."},
+      "createdDate": {"type": "timestamp", "queried": false, "ordered": true, "shape": "serverTimestamp()."},
+      "expireDate": {"type": "timestamp", "queried": false, "ordered": false, "shape": "Client JS Date = now + expiryDay days."},
+      "paymentType": {"type": "string", "queried": false, "ordered": false, "shape": "Gateway name (razorpay, stripe, paypal, payfast, paystack, flutterwave, mercadopago, ...)."}
+    },
+    "where_ops": [["userid", "=="], ["giftCode", "=="]],
+    "order_by": [["createdDate", "desc"]],
+    "pagination": "my_giftcard.blade.php:124: where userid == uid, orderBy createdDate desc, limit(10), startAfter/startAt paging.",
+    "geo": false,
+    "writes": "set at gift_card/success.blade.php:64 (after the gateway callback, from session order_json); update {'redeem': true} at gift_card/my_giftcard.blade.php:355, followed by a client-side wallet credit (wallet set + users.wallet_amount update).",
+    "access": "mixed. Owner (userid) can list their purchases. Redemption looks up ANY user's card by giftCode (cross-owner by design: you redeem a code someone gave you), so it must be a server endpoint that checks the pin, expiry and redeem flag and credits the wallet atomically. SECURITY: today every client can read every purchase's giftPin by querying giftCode, the pin check and expiry check run in the browser, and redeem=true plus the wallet credit are client writes, so double-redeem races and arbitrary credit are possible. The purchase doc is also created client-side from session data.",
+    "notes": "The list view reads val.amount (my_giftcard.blade.php:174-177), which is never written (the field is 'price'), so that price_val is NaN and then overwritten. userid vs user_id naming differs from the other collections. giftPin and giftCode are rendered into HTML onclick handlers."
+  },
+
+  "favorite_vendor": {
+    "doc_id": "Client-generated auto-id via database.collection('tmp').doc().id (multivendor_home.blade.php:1418); stored in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "user_id": {"type": "string", "queried": true, "ordered": false, "shape": "users.id."},
+      "store_id": {"type": "string", "queried": true, "ordered": false, "shape": "vendors.id."},
+      "section_id": {"type": "string", "queried": false, "ordered": false, "shape": "sections.id from the global JS var; the list page filters client-side val.section_id == sectionId."}
+    },
+    "where_ops": [["user_id", "=="], ["store_id", "=="]],
+    "order_by": [],
+    "pagination": "favouritesVendor.blade.php:21/40/104: where user_id == uid, limit(pagesize), startAfter(lastDoc), no orderBy (implicit doc-id order). The section filter is applied client-side AFTER limit, so pages can come back short or empty.",
+    "geo": false,
+    "writes": "set at home_page/multivendor_home.blade.php:1419; delete at multivendor_home.blade.php:1411 and favourites/favouritesVendor.blade.php:180-182 (element.ref.delete()). Toggle read at ecommerce_home.blade.php:1150, multivendor_home.blade.php:1387.",
+    "access": "owner (user_id).",
+    "notes": "No uniqueness enforcement; add UNIQUE(user_id, store_id). The toggle is check-then-insert with no transaction."
+  },
+
+  "favorite_item": {
+    "doc_id": "PHP uniqid() rendered into the page at load time (products/detail.blade.php:966), so it is fixed per page view; stored in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "user_id": {"type": "string", "queried": true, "ordered": false},
+      "product_id": {"type": "string", "queried": true, "ordered": false, "shape": "vendor_products.id."},
+      "store_id": {"type": "string", "queried": false, "ordered": false, "shape": "vendors.id (the clicked element's id = vendorID, detail.blade.php:1051)."},
+      "section_id": {"type": "string", "queried": false, "ordered": false, "shape": "From the section_id cookie (may be ''); filtered client-side on the list page."}
+    },
+    "where_ops": [["user_id", "=="], ["product_id", "=="]],
+    "order_by": [],
+    "pagination": "favouritesProduct.blade.php:25/51/113: where user_id ==, limit + startAfter, no orderBy, client-side section filter after limit.",
+    "geo": false,
+    "writes": "set at products/detail.blade.php:967; delete at products/detail.blade.php:962 and favourites/favouritesProduct.blade.php:201-203.",
+    "access": "owner (user_id).",
+    "notes": "Add UNIQUE(user_id, product_id). Doc id reuse: toggling twice on one page load deletes and then re-creates the same uniqid, which is harmless."
+  },
+
+  "favorite_service": {
+    "doc_id": "PHP uniqid() rendered at page load (providersService/service.blade.php:380); stored in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "user_id": {"type": "string", "queried": true, "ordered": false},
+      "service_id": {"type": "string", "queried": true, "ordered": false, "shape": "providers_services.id."},
+      "service_author_id": {"type": "string", "queried": false, "ordered": false, "shape": "Provider users.id (from data-provider-id). Written but never read on the web: favouriteService.blade.php re-reads providers_services.author instead."},
+      "section_id": {"type": "string", "queried": false, "ordered": false, "shape": "Cookie value; client-side filter."}
+    },
+    "where_ops": [["user_id", "=="], ["service_id", "=="]],
+    "order_by": [],
+    "pagination": "favouriteService.blade.php:21/41/123: where user_id ==, limit + startAfter, no orderBy.",
+    "geo": false,
+    "writes": "set at providersService/service.blade.php:381; delete at providersService/service.blade.php:376 and favourites/favouriteService.blade.php:215-217.",
+    "access": "owner (user_id).",
+    "notes": "Add UNIQUE(user_id, service_id). service_author_id may be undefined (missing key) if the data attribute is absent."
+  },
+
+  "favorite_provider": {
+    "doc_id": "PHP uniqid() rendered at page load (providersService/providerDetail.blade.php:242); stored in `id`.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "user_id": {"type": "string", "queried": true, "ordered": false},
+      "provider_id": {"type": "string", "queried": true, "ordered": false, "shape": "Provider users.id."},
+      "section_id": {"type": "string", "queried": false, "ordered": false, "shape": "Cookie value; client-side filter."}
+    },
+    "where_ops": [["user_id", "=="], ["provider_id", "=="]],
+    "order_by": [],
+    "pagination": "favouritesProvider.blade.php:21/42/125: where user_id ==, limit + startAfter, no orderBy; client-side filter on section and invalid providers.",
+    "geo": false,
+    "writes": "set at providersService/providerDetail.blade.php:243; delete at providerDetail.blade.php:238 and favourites/favouritesProvider.blade.php:161-163.",
+    "access": "owner (user_id).",
+    "notes": "Add UNIQUE(user_id, provider_id). The list page joins users by provider_id and shows the provider's email and phoneNumber publicly."
+  },
+
+  "coupons": {
+    "doc_id": "Admin/vendor-created (not in this repo); `id` duplicates the doc id and is posted to apply-coupon as coupon_id.",
+    "fields": {
+      "id": {"type": "string", "queried": false, "ordered": false},
+      "code": {"type": "string", "queried": true, "ordered": false, "shape": "Coupon code typed by the user; where('code','==') (checkout.blade.php:825, products/detail.blade.php:412)."},
+      "discount": {"type": "float", "queried": false, "ordered": false, "shape": "Number or numeric string (parseInt/parseFloat used)."},
+      "discountType": {"type": "string", "queried": false, "ordered": false, "shape": "'Percent' | 'Percentage' | 'percentage' | 'Fix Price'. All three casings/spellings of percent appear in comparisons across views (PHP and JS); anything else counts as fixed."},
+      "expiresAt": {"type": "timestamp", "queried": true, "ordered": true, "shape": "where('expiresAt','>=',endOfToday) (detail.blade.php:412) and orderBy('expiresAt').startAt(new Date()) (home pages, offers), i.e. 'not yet expired'."},
+      "isEnabled": {"type": "bool", "queried": true, "ordered": false},
+      "isPublic": {"type": "bool", "queried": true, "ordered": false, "shape": "Shown in public offer lists only when true."},
+      "section_id": {"type": "string", "queried": true, "ordered": false, "shape": "sections.id. Note: snake_case here, while providers_coupons and parcel_coupons use 'sectionId'."},
+      "vendorID": {"type": "string", "queried": true, "ordered": false, "shape": "vendors.id, or ''/absent for an app-wide coupon. Queried in getMinDiscount (couponsRef.where('vendorID','==',vendorId), multivendor_home.blade.php:876, ecommerce_home.blade.php:847); checked client-side against the cart vendor at checkout."},
+      "vendor_id": {"type": "string", "queried": true, "ordered": false, "shape": "ONLY referenced in dinein/dyiningvendor.blade.php:373 where('vendor_id','==') on a ref that is never executed (dead code). Probably does not exist in data; the real field is vendorID."},
+      "image": {"type": "string", "queried": false, "ordered": false, "shape": "Coupon image URL (optional)."},
+      "description": {"type": "string", "queried": false, "ordered": false, "shape": "Shown in the offers list (offers.blade.php:149)."}
+    },
+    "where_ops": [
+      ["code", "=="],
+      ["isEnabled", "=="],
+      ["isPublic", "=="],
+      ["section_id", "=="],
+      ["vendorID", "=="],
+      ["expiresAt", ">="],
+      ["vendor_id", "==", "dead code"]
+    ],
+    "order_by": [["expiresAt", "asc"]],
+    "pagination": "Home pages: where isEnabled==true, isPublic==true, section_id==s, orderBy expiresAt asc, startAt(now) [limit(4) on multivendor_home]. offers.blade.php:39: same filter, limit(pagesize) + startAfter(lastDoc) 'load more'. No onSnapshot.",
+    "geo": false,
+    "writes": "read-only from web",
+    "access": "public-read for isEnabled && isPublic && not-expired listings. Lookup by code must also find non-public coupons, so do it via a server validation endpoint, not a raw public table read. SECURITY: discount and discountType are read in the browser and POSTed to the apply-coupon route (ProductController stores them in the session cart), so the server trusts a client-supplied discount. checkout.blade.php:825 validates by code only (no isEnabled/expiry check), unlike products/detail.blade.php:412. Recompute server-side from coupon_id.",
+    "notes": "multivendor_home.blade.php:836 reads val.reststatus on coupons (copy-paste from vendors), which is never present. Different coupon collections use different key names (section_id vs sectionId); keep them distinct or normalize during migration. No usage-count or per-user-limit fields are read on the web."
+  }
+}

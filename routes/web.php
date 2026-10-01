@@ -205,3 +205,25 @@ Route::post('razorpaywalletpayment', [App\Http\Controllers\TransactionController
 Route::post('wallet-process-mercadopago', [App\Http\Controllers\TransactionController::class, 'processMercadoPagoPayment'])->name('wallet-process-mercadopago');
 Route::get('wallet-success', [App\Http\Controllers\TransactionController::class, 'success'])->name('wallet-success');
 Route::get('wallet-notify', [App\Http\Controllers\TransactionController::class, 'notify'])->name('wallet-notify');
+/*
+| MySQL backend for public/js/firebase-local.js (replaces Firebase Firestore/Auth/Storage).
+*/
+Route::prefix('fs')->group(function () {
+    Route::post('batch', [App\Http\Controllers\FirestoreController::class, 'batch'])->middleware('throttle:600,1');
+
+    Route::post('auth/me', [App\Http\Controllers\FsAuthController::class, 'me']);
+    Route::post('auth/login', [App\Http\Controllers\FsAuthController::class, 'login']);
+    Route::post('auth/register', [App\Http\Controllers\FsAuthController::class, 'register'])->middleware('throttle:10,1');
+    Route::post('auth/logout', [App\Http\Controllers\FsAuthController::class, 'logout']);
+    Route::post('auth/password-reset', [App\Http\Controllers\FsAuthController::class, 'passwordReset'])->middleware('throttle:5,1');
+    Route::post('auth/phone/send', [App\Http\Controllers\FsAuthController::class, 'phoneSend'])->middleware('throttle:10,1');
+    Route::post('auth/phone/verify', [App\Http\Controllers\FsAuthController::class, 'phoneVerify'])->middleware('throttle:20,1');
+
+    Route::post('storage/upload', [App\Http\Controllers\FsStorageController::class, 'upload'])->middleware('throttle:60,1');
+    Route::post('storage/upload-string', [App\Http\Controllers\FsStorageController::class, 'uploadString'])->middleware('throttle:60,1');
+    Route::post('storage/url', [App\Http\Controllers\FsStorageController::class, 'url']);
+    Route::post('storage/delete', [App\Http\Controllers\FsStorageController::class, 'delete']);
+});
+
+Route::get('password/reset/{token}', [App\Http\Controllers\Auth\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('password/reset', [App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])->name('password.update');

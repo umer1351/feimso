@@ -1,8 +1,4 @@
-if ('serviceWorker' in navigator) {
-navigator.serviceWorker.register('../firebase-messaging-sw.js')
-  .then(function(registration) {
-    console.log('Registration successful, scope is:', registration.scope);
-  }).catch(function(err) {
-    console.log('Service worker registration failed, error:', err);
-  });
-}
+// Firebase Cloud Messaging was removed. If a browser still has the old service
+// worker registered, this version unregisters it.
+self.addEventListener('install', function () { self.skipWaiting(); });
+self.addEventListener('activate', function () { self.registration.unregister(); });

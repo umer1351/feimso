@@ -2,24 +2,23 @@
 
 namespace App\Http\Middleware;
 
+use App\Helpers\FirestoreHelper;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Helpers\FirestoreHelper;
 
+/** Shows the maintenance page when settings/maintenance_settings says so. */
 class FirebaseMaintenance
 {
     public function handle(Request $request, Closure $next): Response
     {
         try {
-            $maintenance_settings = FirestoreHelper::getDocument('settings/maintenance_settings');
-            if (!empty($maintenance_settings)) {
-                if ($maintenance_settings['isMaintenanceModeForCustomer'] === true) {
-                    return response()->view('maintenance');
-                }
+            $settings = FirestoreHelper::getDocument('settings/maintenance_settings');
+            if (!empty($settings['isMaintenanceModeForCustomer']) && !$request->is('admin', 'admin/*', 'fs/*')) {
+                return response()->view('maintenance');
             }
-        } catch (\Exception $e) {
-            // Firestore unreachable - skip maintenance check
+        } catch (\Throwable $e) {
+            // database unavailable - skip the maintenance check
         }
         return $next($request);
     }

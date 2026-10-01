@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Cashier\Billable;
-use Spatie\Image\Manipulations;
-use Spatie\MediaLibrary\HasMedia\HasMedia;
-use Spatie\MediaLibrary\HasMedia\HasMediaTrait;
-use Spatie\Permission\Traits\HasRoles;
-
-class VendorUsers extends Authenticatable
+/**
+ * Compatibility alias. The old app kept a `vendor_users` table mapping Laravel
+ * users to Firebase uids (`uuid`). Accounts now live in `users` with the uid
+ * as the primary key, so `uuid` simply reads the id.
+ */
+class VendorUsers extends User
 {
-    public $timestamps = false;
-    public $table = 'vendor_users';
+    protected $table = 'users';
+
+    public function getUuidAttribute(): string
+    {
+        return (string) $this->id;
+    }
 }

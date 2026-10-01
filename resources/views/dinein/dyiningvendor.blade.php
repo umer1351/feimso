@@ -307,7 +307,6 @@
 </div>
 <!-- GeoFirestore -->
 <script src="{{ asset('js/geofirestore.js') }}"></script>
-<script src="https://cdn.firebase.com/libs/geofire/5.0.1/geofire.min.js"></script>
 <script type="text/javascript" src="{{asset('vendor/slick/slick.min.js')}}"></script>
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script type="text/javascript">
