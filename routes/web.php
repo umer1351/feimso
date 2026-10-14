@@ -135,7 +135,7 @@ Route::post('sendemail/send', [SendEmailController::class, 'send'])->name('sendC
 Route::get('my_order/{id}', [OrderController::class, 'edit'])->name('orderDetails');
 Route::post('add-cart-note', [OrderController::class, 'addCartNote'])->name('add-cart-note');
 Route::get('page/{slug}', [CmsController::class, 'index'])->name('page');
-Route::post('send-email', [App\Http\Controllers\SendEmailController::class, 'sendMail'])->name('sendMail');
+Route::post('send-email', [App\Http\Controllers\SendEmailController::class, 'sendMail'])->middleware('throttle:10,1')->name('sendMail');
 Route::get('forgot-password', [App\Http\Controllers\LoginController::class, 'forgotPassword'])->name('forgot-password');
 Route::post('remove-cart-data', [PaymentController::class, 'removeCartData'])->name('remove-cart-data');
 Route::get('check-cart-data', [PaymentController::class, 'checkCartData'])->name('check-cart-data');
@@ -227,6 +227,52 @@ Route::prefix('fs')->group(function () {
 
 Route::get('password/reset/{token}', [App\Http\Controllers\Auth\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('password/reset', [App\Http\Controllers\Auth\ResetPasswordController::class, 'reset'])->name('password.update');
+
+/*
+| Feimso 2.0 — fashion marketplace web routes.
+*/
+Route::prefix('feimso')->name('feimso.')->group(function () {
+    // Auth (guest)
+    Route::middleware('guest')->group(function () {
+        Route::get('register',         [App\Http\Controllers\Feimso\PageController::class, 'showRegister'])->name('register');
+        Route::post('register',        [App\Http\Controllers\Feimso\PageController::class, 'register'])->name('register.submit');
+        Route::get('login',            [App\Http\Controllers\Feimso\PageController::class, 'showLogin'])->name('login');
+        Route::post('login',           [App\Http\Controllers\Feimso\PageController::class, 'login'])->name('login.submit');
+        Route::get('forgot',           [App\Http\Controllers\Feimso\PageController::class, 'showForgot'])->name('forgot');
+        Route::post('forgot',          [App\Http\Controllers\Feimso\PageController::class, 'forgot'])->name('forgot.submit');
+        Route::get('forgot/sent',      [App\Http\Controllers\Feimso\PageController::class, 'forgotSent'])->name('forgot.sent');
+    });
+
+    // Auth (any)
+    Route::post('logout',              [App\Http\Controllers\Feimso\PageController::class, 'logout'])->name('logout');
+    Route::get('verify-email',         [App\Http\Controllers\Feimso\PageController::class, 'verifyEmail'])->name('verify-email');
+
+    // Onboarding (auth required)
+    Route::middleware('auth')->group(function () {
+        Route::get('onboarding/step1',  [App\Http\Controllers\Feimso\PageController::class, 'onboardStep1'])->name('onboarding.step1');
+        Route::post('onboarding/step1', [App\Http\Controllers\Feimso\PageController::class, 'onboardStep1Submit'])->name('onboarding.step1.submit');
+        Route::get('onboarding/step2',  [App\Http\Controllers\Feimso\PageController::class, 'onboardStep2'])->name('onboarding.step2');
+        Route::post('onboarding/step2', [App\Http\Controllers\Feimso\PageController::class, 'onboardStep2Submit'])->name('onboarding.step2.submit');
+        Route::get('check-username',    [App\Http\Controllers\Feimso\PageController::class, 'checkUsername'])->name('check-username');
+    });
+
+    // Public browsing
+    Route::get('feed',              [App\Http\Controllers\Feimso\PageController::class, 'feed'])->name('feed');
+    Route::get('marketplace',       [App\Http\Controllers\Feimso\PageController::class, 'marketplace'])->name('marketplace');
+    Route::get('profile',           [App\Http\Controllers\Feimso\PageController::class, 'profile'])->name('profile');
+    Route::get('profile/{id}',      [App\Http\Controllers\Feimso\PageController::class, 'profile'])->name('profile.show');
+
+    // Auth-protected (specific paths before wildcards)
+    Route::middleware('auth')->group(function () {
+        Route::get('listings/create',   [App\Http\Controllers\Feimso\PageController::class, 'createListing'])->name('listing.create');
+        Route::post('listings',         [App\Http\Controllers\Feimso\PageController::class, 'storeListing'])->name('listing.store');
+        Route::get('profile/edit',      [App\Http\Controllers\Feimso\PageController::class, 'editProfile'])->name('profile.edit');
+        Route::post('bookings',         [App\Http\Controllers\Feimso\PageController::class, 'storeBooking'])->name('booking.store');
+    });
+
+    // Wildcard listing show (after specific paths)
+    Route::get('listings/{id}',     [App\Http\Controllers\Feimso\PageController::class, 'showListing'])->name('listing.show');
+});
 
 /*
 | Admin panel (/admin). Accounts with users.role = 'admin'.

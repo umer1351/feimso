@@ -246,6 +246,12 @@ class Engine
                 }
             }
         }
+        // eMart documents carry their own id as a field and the views rely on it
+        // (e.g. checkout copies the user doc into order.author and lists orders
+        // by author.id), so expose it even when the stored doc lacks it.
+        if (!array_key_exists('id', $data)) {
+            $data['id'] = (string) $row['id'];
+        }
         return ['id' => (string) $row['id'], 'data' => $data];
     }
 

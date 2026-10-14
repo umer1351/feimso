@@ -2,6 +2,33 @@
 @section('title', __('admin.dashboard'))
 
 @section('content')
+
+{{-- Feimso 2.0 KPIs --}}
+@if(!empty($feimso))
+<div class="row mb-2">
+    <div class="col-12"><h6 class="text-uppercase text-muted fw-semibold" style="font-size:11px;letter-spacing:.05em">Feimso 2.0</h6></div>
+    @foreach([
+        'total_users'       => ['label'=>'Registered Users',        'href'=>route('admin.resource.index','feimso_users'),     'icon'=>'users'],
+        'pending_verif'     => ['label'=>'Pending Verifications',    'href'=>route('admin.resource.index','creator_verifications'),'icon'=>'shield'],
+        'active_listings'   => ['label'=>'Active Listings',          'href'=>route('admin.resource.index','listings'),         'icon'=>'tag'],
+        'open_disputes'     => ['label'=>'Open Disputes',            'href'=>route('admin.resource.index','disputes'),         'icon'=>'alert-triangle'],
+        'bookings_today'    => ['label'=>'Bookings Today',           'href'=>route('admin.resource.index','bookings'),         'icon'=>'calendar'],
+        'pipeline_approved' => ['label'=>'Approved Creators',        'href'=>route('admin.resource.index','creator_pipeline'), 'icon'=>'trending-up'],
+    ] as $key => $meta)
+        @if(isset($feimso[$key]))
+        <div class="col-sm-6 col-xl-2 mb-3">
+            <a href="{{ $meta['href'] }}" class="card stat text-reset text-decoration-none">
+                <div class="n">{{ number_format($feimso[$key]) }}</div>
+                <div class="l"><i class="feather-{{ $meta['icon'] }} me-1"></i>{{ $meta['label'] }}</div>
+            </a>
+        </div>
+        @endif
+    @endforeach
+</div>
+<hr class="mb-3">
+@endif
+
+{{-- Legacy stats --}}
 <div class="row">
     @foreach(['customers' => 'users', 'vendors' => 'vendors', 'products' => 'vendor_products', 'orders' => 'vendor_orders'] as $key => $res)
         <div class="col-sm-6 col-xl-3 mb-3">

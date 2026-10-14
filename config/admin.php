@@ -24,6 +24,12 @@ $section = ['type' => 'select', 'source' => ['collection' => 'sections', 'label'
 
 return [
     'groups' => [
+        // ── Feimso 2.0 ─────────────────────────────────────────────────────
+        'compliance'       => ['creator_verifications', 'business_profiles', 'feimso_users'],
+        'marketplace'      => ['listings', 'bookings'],
+        'trust_safety'     => ['disputes'],
+        'creator_pipeline' => ['creator_pipeline', 'feimso_referrals'],
+        // ── legacy delivery-app (keep for now) ─────────────────────────────
         'catalog' => ['sections', 'vendor_categories', 'vendors', 'vendor_products', 'brands', 'vendor_attributes', 'review_attributes'],
         'orders' => ['vendor_orders', 'provider_orders', 'parcel_orders', 'rental_orders', 'booked_table'],
         'people' => ['users', 'wallet', 'items_review'],
@@ -441,6 +447,255 @@ return [
             'icon' => 'bell', 'title' => 'type', 'search' => ['type', 'subject'],
             'columns' => ['type', 'subject'],
             'fields' => ['type' => ['type' => 'text', 'required' => true], 'subject' => ['type' => 'text', 'required' => true], 'message' => ['type' => 'textarea', 'required' => true]],
+        ],
+
+        // ══════════════════════════════════════════════════════════════════
+        // FEIMSO 2.0 — Compliance
+        // ══════════════════════════════════════════════════════════════════
+
+        'feimso_users' => [
+            'icon' => 'user-check', 'title' => 'email',
+            'search' => ['email', 'firstName', 'lastName', 'phoneNumber'],
+            'filters' => [
+                'feimso_role' => ['type' => 'select', 'options' => [
+                    'buyer' => 'Buyer', 'individual_seller' => 'Individual Seller',
+                    'licensed_creator' => 'Licensed Creator', 'business' => 'Business',
+                    'advertising_creator' => 'Advertising Creator',
+                ]],
+                'verification_status' => ['type' => 'select', 'options' => [
+                    'unverified' => 'Unverified', 'pending' => 'Pending', 'verified' => 'Verified',
+                    'expired' => 'Expired', 'suspended' => 'Suspended', 'rejected' => 'Rejected',
+                ]],
+            ],
+            'columns' => ['profilePictureURL' => 'image', 'firstName', 'lastName', 'email', 'feimso_role', 'verification_status'],
+            'fields' => [
+                'firstName'           => ['type' => 'text', 'required' => true],
+                'lastName'            => ['type' => 'text'],
+                'email'               => ['type' => 'email', 'required' => true],
+                'phoneNumber'         => ['type' => 'text'],
+                'feimso_role'         => ['type' => 'select', 'options' => [
+                    'buyer' => 'Buyer', 'individual_seller' => 'Individual Seller',
+                    'licensed_creator' => 'Licensed Creator', 'business' => 'Business',
+                    'advertising_creator' => 'Advertising Creator',
+                ]],
+                'verification_status' => ['type' => 'select', 'options' => [
+                    'unverified' => 'Unverified', 'pending' => 'Pending', 'verified' => 'Verified',
+                    'expired' => 'Expired', 'suspended' => 'Suspended', 'rejected' => 'Rejected',
+                ]],
+                'verification_notes'     => ['type' => 'textarea'],
+                'verification_expires_at' => ['type' => 'datetime'],
+                'active'                  => ['type' => 'bool', 'default' => true],
+            ],
+        ],
+
+        'creator_verifications' => [
+            'icon' => 'shield', 'title' => 'id', 'create' => false,
+            'search' => ['licence_number', 'issuing_authority', 'activity'],
+            'filters' => [
+                'status' => ['type' => 'select', 'options' => [
+                    'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected',
+                    'expired' => 'Expired', 'suspended' => 'Suspended',
+                ]],
+                'role' => ['type' => 'select', 'options' => [
+                    'individual_seller' => 'Individual Seller', 'licensed_creator' => 'Licensed Creator',
+                    'business' => 'Business', 'advertising_creator' => 'Advertising Creator',
+                ]],
+            ],
+            'columns' => ['user_id' => 'ref:users.email', 'role', 'credential_type', 'licence_number', 'status', '_created' => 'datetime'],
+            'fields' => [
+                'status'                  => ['type' => 'select', 'required' => true, 'options' => [
+                    'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected',
+                    'expired' => 'Expired', 'suspended' => 'Suspended',
+                ]],
+                'credential_type'         => ['type' => 'text'],
+                'licence_number'          => ['type' => 'text'],
+                'issuing_authority'       => ['type' => 'text'],
+                'activity'                => ['type' => 'text'],
+                'licence_expiry'          => ['type' => 'datetime'],
+                'vat_trn'                 => ['type' => 'text'],
+                'advertiser_permit_number' => ['type' => 'text'],
+                'document_urls'           => ['type' => 'images'],
+                'admin_notes'             => ['type' => 'textarea'],
+            ],
+        ],
+
+        'business_profiles' => [
+            'icon' => 'briefcase', 'title' => 'business_name',
+            'search' => ['business_name', 'legal_name', 'trade_licence_number'],
+            'filters' => [
+                'verification_status' => ['type' => 'select', 'options' => [
+                    'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected', 'suspended' => 'Suspended',
+                ]],
+            ],
+            'columns' => ['logo_url' => 'image', 'business_name', 'legal_name', 'trade_licence_number', 'trade_licence_expiry', 'verification_status'],
+            'fields' => [
+                'business_name'            => ['type' => 'text', 'required' => true],
+                'legal_name'               => ['type' => 'text'],
+                'trade_licence_number'     => ['type' => 'text'],
+                'trade_licence_authority'  => ['type' => 'text'],
+                'trade_licence_expiry'     => ['type' => 'datetime'],
+                'vat_trn'                  => ['type' => 'text'],
+                'representative_name'      => ['type' => 'text'],
+                'representative_email'     => ['type' => 'email'],
+                'representative_phone'     => ['type' => 'text'],
+                'licence_document_urls'    => ['type' => 'images'],
+                'description'              => ['type' => 'textarea'],
+                'logo_url'                 => ['type' => 'image'],
+                'cover_url'                => ['type' => 'image'],
+                'verification_status'      => ['type' => 'select', 'options' => [
+                    'pending' => 'Pending', 'verified' => 'Verified', 'rejected' => 'Rejected', 'suspended' => 'Suspended',
+                ]],
+                'admin_notes'              => ['type' => 'textarea'],
+            ],
+        ],
+
+        // ══════════════════════════════════════════════════════════════════
+        // FEIMSO 2.0 — Marketplace
+        // ══════════════════════════════════════════════════════════════════
+
+        'listings' => [
+            'icon' => 'tag', 'title' => 'title', 'create' => false,
+            'search' => ['title', 'category', 'brand'],
+            'filters' => [
+                'listing_type' => ['type' => 'select', 'options' => [
+                    'sale' => 'Sale', 'rental' => 'Rental', 'service' => 'Service', 'experience' => 'Experience',
+                ]],
+                'status' => ['type' => 'select', 'options' => [
+                    'draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused',
+                    'sold' => 'Sold', 'archived' => 'Archived', 'rejected' => 'Rejected',
+                ]],
+                'is_published' => ['type' => 'bool'],
+            ],
+            'columns' => ['listing_type', 'title', 'seller_id' => 'ref:users.email', 'price', 'currency', 'status', 'is_published' => 'bool', '_created' => 'datetime'],
+            'fields' => [
+                'status'         => ['type' => 'select', 'options' => [
+                    'draft' => 'Draft', 'active' => 'Active', 'paused' => 'Paused',
+                    'sold' => 'Sold', 'archived' => 'Archived', 'rejected' => 'Rejected',
+                ]],
+                'is_published'   => ['type' => 'bool'],
+                'admin_notes'    => ['type' => 'textarea'],
+                'title'          => ['type' => 'text'],
+                'description'    => ['type' => 'textarea'],
+                'price'          => ['type' => 'number'],
+                'listing_type'   => ['type' => 'select', 'options' => [
+                    'sale' => 'Sale', 'rental' => 'Rental', 'service' => 'Service', 'experience' => 'Experience',
+                ]],
+                'category'       => ['type' => 'text'],
+                'brand'          => ['type' => 'text'],
+                'condition'      => ['type' => 'select', 'options' => ['new' => 'New', 'like_new' => 'Like new', 'good' => 'Good', 'fair' => 'Fair']],
+                'delivery_option' => ['type' => 'select', 'options' => ['pickup' => 'Pickup only', 'courier' => 'Courier', 'both' => 'Both']],
+                'return_policy'  => ['type' => 'textarea'],
+                'photos'         => ['type' => 'images'],
+            ],
+        ],
+
+        'bookings' => [
+            'icon' => 'calendar', 'orders' => true, 'create' => false, 'title' => 'id',
+            'search' => ['status', 'payment_status', 'booking_type'],
+            'filters' => [
+                'booking_type'   => ['type' => 'select', 'options' => ['sale' => 'Sale', 'rental' => 'Rental', 'service' => 'Service', 'experience' => 'Experience']],
+                'status'         => ['type' => 'select', 'options' => ['pending' => 'Pending', 'confirmed' => 'Confirmed', 'in_progress' => 'In progress', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'disputed' => 'Disputed']],
+                'payment_status' => ['type' => 'select', 'options' => ['pending' => 'Pending', 'paid' => 'Paid', 'failed' => 'Failed', 'refunded' => 'Refunded', 'chargeback' => 'Chargeback']],
+            ],
+            'columns' => ['booking_type', 'buyer_id' => 'ref:users.email', 'seller_id' => 'ref:users.email', 'total', 'currency', 'status', 'payment_status', '_created' => 'datetime'],
+            'fields' => [
+                'status'         => ['type' => 'select', 'options' => ['pending' => 'Pending', 'confirmed' => 'Confirmed', 'in_progress' => 'In progress', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'disputed' => 'Disputed']],
+                'payment_status' => ['type' => 'select', 'options' => ['pending' => 'Pending', 'paid' => 'Paid', 'failed' => 'Failed', 'refunded' => 'Refunded', 'chargeback' => 'Chargeback']],
+                'fulfilment_status' => ['type' => 'select', 'options' => ['awaiting' => 'Awaiting', 'ready' => 'Ready', 'picked_up' => 'Picked up', 'in_transit' => 'In transit', 'delivered' => 'Delivered', 'returned' => 'Returned']],
+                'refund_amount'  => ['type' => 'number'],
+                'admin_notes'    => ['type' => 'textarea'],
+            ],
+        ],
+
+        // ══════════════════════════════════════════════════════════════════
+        // FEIMSO 2.0 — Trust & Safety
+        // ══════════════════════════════════════════════════════════════════
+
+        'disputes' => [
+            'icon' => 'alert-triangle', 'orders' => true, 'create' => false, 'title' => 'id',
+            'search' => ['dispute_type', 'status'],
+            'filters' => [
+                'status' => ['type' => 'select', 'options' => [
+                    'open' => 'Open', 'under_review' => 'Under review', 'resolved' => 'Resolved',
+                    'closed' => 'Closed', 'escalated' => 'Escalated',
+                ]],
+                'dispute_type' => ['type' => 'select', 'options' => [
+                    'item_not_received' => 'Not received', 'item_not_as_described' => 'Not as described',
+                    'damage' => 'Damage', 'payment' => 'Payment', 'other' => 'Other',
+                ]],
+            ],
+            'columns' => ['complainant_id' => 'ref:users.email', 'dispute_type', 'status', 'resolution', '_created' => 'datetime'],
+            'fields' => [
+                'status'        => ['type' => 'select', 'options' => [
+                    'open' => 'Open', 'under_review' => 'Under review', 'resolved' => 'Resolved',
+                    'closed' => 'Closed', 'escalated' => 'Escalated',
+                ]],
+                'resolution'    => ['type' => 'select', 'options' => [
+                    '' => '— none —', 'refund_buyer' => 'Refund buyer', 'release_seller' => 'Release to seller',
+                    'partial_refund' => 'Partial refund', 'no_action' => 'No action',
+                ]],
+                'refund_amount' => ['type' => 'number'],
+                'admin_notes'   => ['type' => 'textarea'],
+                'evidence_urls' => ['type' => 'images'],
+            ],
+        ],
+
+        // ══════════════════════════════════════════════════════════════════
+        // FEIMSO 2.0 — Creator Pipeline
+        // ══════════════════════════════════════════════════════════════════
+
+        'creator_pipeline' => [
+            'icon' => 'trending-up', 'title' => 'name',
+            'search' => ['email', 'name', 'phone', 'instagram'],
+            'filters' => [
+                'pipeline_stage' => ['type' => 'select', 'options' => [
+                    'prospecting' => 'Prospecting', 'contacted' => 'Contacted', 'applied' => 'Applied',
+                    'approved' => 'Approved', 'activated' => 'Activated', 'transacting' => 'Transacting', 'repeat' => 'Repeat',
+                ]],
+                'cohort' => ['type' => 'select', 'options' => [
+                    'founding' => 'Founding Creator', 'alpha' => 'Alpha', 'beta' => 'Beta', 'general' => 'General',
+                ]],
+                'creator_type' => ['type' => 'select', 'options' => [
+                    'stylist' => 'Stylist', 'designer' => 'Designer', 'photographer' => 'Photographer',
+                    'model' => 'Model', 'wardrobe_curator' => 'Wardrobe curator',
+                    'boutique' => 'Boutique', 'vintage' => 'Vintage', 'other' => 'Other',
+                ]],
+            ],
+            'columns' => ['name', 'email', 'creator_type', 'cohort', 'pipeline_stage', 'listing_count', 'transaction_count', '_created' => 'datetime'],
+            'fields' => [
+                'name'           => ['type' => 'text', 'required' => true],
+                'email'          => ['type' => 'email', 'required' => true],
+                'phone'          => ['type' => 'text'],
+                'instagram'      => ['type' => 'text'],
+                'creator_type'   => ['type' => 'select', 'options' => [
+                    'stylist' => 'Stylist', 'designer' => 'Designer', 'photographer' => 'Photographer',
+                    'model' => 'Model', 'wardrobe_curator' => 'Wardrobe curator',
+                    'boutique' => 'Boutique', 'vintage' => 'Vintage', 'other' => 'Other',
+                ]],
+                'cohort'         => ['type' => 'select', 'options' => [
+                    'founding' => 'Founding Creator', 'alpha' => 'Alpha', 'beta' => 'Beta', 'general' => 'General',
+                ]],
+                'pipeline_stage' => ['type' => 'select', 'options' => [
+                    'prospecting' => 'Prospecting', 'contacted' => 'Contacted', 'applied' => 'Applied',
+                    'approved' => 'Approved', 'activated' => 'Activated', 'transacting' => 'Transacting', 'repeat' => 'Repeat',
+                ]],
+                'assigned_to'    => ['type' => 'text'],
+                'notes'          => ['type' => 'textarea'],
+                'listing_count'  => ['type' => 'integer', 'default' => 0],
+                'transaction_count' => ['type' => 'integer', 'default' => 0],
+            ],
+        ],
+
+        'feimso_referrals' => [
+            'icon' => 'share-2', 'create' => false, 'edit' => false, 'title' => 'referral_code',
+            'search' => ['referral_code', 'referee_email'],
+            'filters' => [
+                'status' => ['type' => 'select', 'options' => [
+                    'sent' => 'Sent', 'registered' => 'Registered', 'activated' => 'Activated', 'transacted' => 'Transacted',
+                ]],
+            ],
+            'columns' => ['referrer_id' => 'ref:users.email', 'referee_email', 'referral_code', 'status', '_created' => 'datetime'],
+            'fields' => [],
         ],
     ],
 ];

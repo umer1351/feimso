@@ -64,11 +64,23 @@ return [
     'stats' => ['customers' => 'العملاء', 'vendors' => 'المتاجر', 'products' => 'المنتجات', 'orders' => 'الطلبات'],
 
     'groups' => [
+        'compliance'       => 'الامتثال',
+        'marketplace'      => 'السوق',
+        'trust_safety'     => 'الثقة والسلامة',
+        'creator_pipeline' => 'خط المبدعين',
         'catalog' => 'الكتالوج', 'orders' => 'الطلبات', 'people' => 'المستخدمون', 'marketing' => 'التسويق',
         'services' => 'الخدمات عند الطلب', 'parcel_rental' => 'الطرود والتأجير', 'config' => 'الإعدادات العامة',
     ],
 
     'resources' => [
+        'feimso_users'          => 'المستخدمون',
+        'creator_verifications' => 'التحقق',
+        'business_profiles'     => 'الملفات التجارية',
+        'listings'              => 'القوائم',
+        'bookings'              => 'الحجوزات',
+        'disputes'              => 'النزاعات',
+        'creator_pipeline'      => 'خط المبدعين',
+        'feimso_referrals'      => 'الإحالات',
         'sections' => 'الأقسام', 'vendor_categories' => 'التصنيفات', 'vendors' => 'المتاجر', 'vendor_products' => 'المنتجات',
         'brands' => 'العلامات التجارية', 'vendor_attributes' => 'خصائص المنتجات', 'review_attributes' => 'معايير التقييم',
         'vendor_orders' => 'طلبات المتاجر', 'provider_orders' => 'حجوزات الخدمات', 'parcel_orders' => 'طلبات الطرود',

@@ -61,6 +61,7 @@ return [
     'new_password' => "كلمة المرور الجديدة",
     'next' => "التالي",
     'non_veg' => "غير نباتي",
+    'veg' => "نباتي",
     'old_password' => "كلمة المرور القديمة",
     'old_password_help' => 'أدخل كلمة المرور القديمة',
     'order_accepted' => "تم قبول الطلب",

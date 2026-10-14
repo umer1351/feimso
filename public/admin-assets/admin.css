@@ -1,11 +1,24 @@
 /* Feimso admin — small layer on top of Bootstrap 4 (LTR and RTL builds). */
+/*
+ * BRAND COLOUR TOKENS — swap these values once the client provides the palette.
+ * Current values: Feimso placeholder (dark navy sidebar + rose accent).
+ *
+ *  --adm-brand   : primary action / CTA
+ *  --adm-accent  : secondary highlight
+ *  --adm-side    : sidebar background
+ */
 :root {
-    --adm-bg: #f4f6f9;
-    --adm-side: #1f2433;
-    --adm-side-text: #aab2c5;
-    --adm-side-active: #ff3b5c;
-    --adm-border: #e3e7ee;
-    --adm-muted: #6c757d;
+    --adm-brand:      #c9973a;   /* ← client primary (gold/bronze placeholder) */
+    --adm-accent:     #e8b96a;   /* ← client accent */
+    --adm-bg:         #f5f6f8;
+    --adm-side:       #111827;   /* very dark navy */
+    --adm-side-text:  #9ca3af;
+    --adm-side-active: var(--adm-brand);
+    --adm-border:     #e5e7eb;
+    --adm-muted:      #6b7280;
+    --adm-success:    #16a34a;
+    --adm-danger:     #dc2626;
+    --adm-warning:    #d97706;
 }
 
 body.admin { background: var(--adm-bg); font-size: 14px; }

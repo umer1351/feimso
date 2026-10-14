@@ -180,7 +180,7 @@ class FirestoreEngineTest extends TestCase
 
         $this->set('m', ['name' => 'Fresh']); // plain set replaces
         $doc = $this->batch([['t' => 'get', 'c' => 'items', 'id' => 'm']])[0]['doc']['data'];
-        $this->assertSame(['name' => 'Fresh'], $doc);
+        $this->assertSame(['name' => 'Fresh', 'id' => 'm'], $doc); // id is always exposed, like eMart docs
 
         $r = $this->batch([['t' => 'write', 'ops' => [['op' => 'update', 'collection' => 'items', 'id' => 'ghost', 'data' => ['name' => 'x']]]]])[0];
         $this->assertSame('not-found', $r['code']);

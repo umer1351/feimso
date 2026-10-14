@@ -26,20 +26,33 @@ class VendorController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index($id)
+    public function index($id, \App\Storefront\StorePage $page)
     {
+        $data = $page->load((string) $id);
+        abort_if($data === null, 404);
         $cart = session()->get('cart', []);
-        return view('vendor.vendor', ['cart' => $cart, 'id' => $id]);
+        return view('vendor.vendor', ['cart' => $cart, 'id' => $id] + $data);
     }
 
-    public function categoryList()
+    /** "See all" categories for the current section. */
+    public function categoryList(Request $request)
     {
-        return view('vendor.categorylist');
+        $sectionId = (string) $request->cookie('section_id', $_COOKIE['section_id'] ?? '');
+        $categories = \App\Helpers\FirestoreHelper::query('vendor_categories', [['section_id', '==', $sectionId], ['publish', '==', true]]);
+        usort($categories, fn ($a, $b) => strnatcasecmp($a['data']['title'] ?? '', $b['data']['title'] ?? ''));
+        $isEcommerce = ($_COOKIE['service_type'] ?? '') === 'Ecommerce Service';
+        return view('vendor.categorylist', compact('categories', 'isEcommerce'));
     }
 
+    /**
+     * A category's page. The store/product listings already exist
+     * (allvendors/bycategory, products/list), so send the visitor there.
+     */
     public function categoryDetail($id)
     {
-        return view('vendor.list', ['id' => $id]);
+        return ($_COOKIE['service_type'] ?? '') === 'Ecommerce Service'
+            ? redirect()->route('productlist', ['category', $id])
+            : redirect()->route('vendorsbycategory', $id);
     }
 
     public function sendnotification(Request $request)

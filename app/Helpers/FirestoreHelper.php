@@ -49,6 +49,21 @@ class FirestoreHelper
             })->values()->all();
     }
 
+    /**
+     * Firestore-style query, server side. Same semantics as the browser's
+     * collection().where()...get(): $filters = [[field, op, value]], $orderBy = [[field, dir]].
+     *
+     * @return array<int, array{id:string, data:array}>
+     */
+    public static function query(string $collection, array $filters = [], array $orderBy = [], ?int $limit = null): array
+    {
+        $q = ['filters' => $filters, 'orderBy' => $orderBy];
+        if ($limit !== null) {
+            $q['limit'] = $limit;
+        }
+        return self::engine()->query($collection, $q);
+    }
+
     public static function setDocument($path, array $data)
     {
         [$collection, $id] = array_pad(explode('/', (string) $path, 2), 2, '');
